@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Vocabulary Practice</title>
+
+        <style>
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                margin: 0;
+                font-family: Arial, Helvetica, sans-serif;
+                background: #f7f7f7;
+                color: #222;
+            }
+
+            .main-wrap {
+                max-width: 1000px;
+                margin: 0 auto;
+                padding: 24px 16px 8px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 18px;
+            }
+
+            .controls {
+                width: 100%;
+                max-width: 420px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 10px;
+            }
+
+            .controls label {
+                font-size: 0.95rem;
+                font-weight: 600;
+            }
+
+            .controls select,
+            .controls button {
+                font-size: 1rem;
+                padding: 10px 14px;
+                border: 1px solid #999;
+                border-radius: 8px;
+                background: #fff;
+            }
+
+            .controls select {
+                width: 100%;
+                max-width: 320px;
+            }
+
+            .controls button {
+                cursor: pointer;
+            }
+
+            .controls button:hover {
+                background: #f1f1f1;
+            }
+
+            .status-text {
+                min-height: 1.2em;
+                font-size: 0.95rem;
+                color: #555;
+                text-align: center;
+            }
+
+            .flashcard-stage {
+                perspective: 1400px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 320px;
+                width: 100%;
+            }
+
+            .cards__single {
+                width: min(92vw, 640px);
+                aspect-ratio: 5 / 3;
+                cursor: pointer;
+            }
+
+            .cards__inner {
+                position: relative;
+                width: 100%;
+                height: 100%;
+                transition: transform 0.6s ease;
+                transform-style: preserve-3d;
+            }
+
+            .cards__single.flip .cards__inner {
+                transform: rotateX(180deg);
+            }
+
+            .card-face {
+                position: absolute;
+                inset: 0;
+                backface-visibility: hidden;
+                -webkit-backface-visibility: hidden;
+                background: #fff;
+                border: 2px solid #222;
+                border-radius: 14px;
+                box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+                padding: 22px 18px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                text-align: center;
+            }
+
+            .card-back {
+                transform: rotateX(180deg);
+            }
+
+            .jp-text {
+                font-size: clamp(2rem, 5vw, 2.5rem);
+                font-weight: 700;
+                line-height: 1.25;
+                margin-bottom: 12px;
+                word-break: break-word;
+            }
+
+            .notes-front {
+                font-size: 0.9rem;
+                font-style: italic;
+                color: #666;
+                line-height: 1.45;
+                margin-bottom: 14px;
+                max-width: 100%;
+                white-space: pre-wrap;
+            }
+
+            .pronunciation {
+                font-size: 1.15rem;
+                line-height: 1.45;
+                margin: 2px 0;
+                word-break: break-word;
+            }
+
+            .translation {
+                font-size: clamp(1.4rem, 4vw, 1.8rem);
+                font-weight: 600;
+                line-height: 1.4;
+                margin: 5px 0;
+                word-break: break-word;
+            }
+
+            .example-text {
+                font-size: 0.95rem;
+                color: #444;
+                line-height: 1.55;
+                margin-top: 14px;
+                white-space: pre-wrap;
+                word-break: break-word;
+            }
+
+            .notes-back {
+                font-size: 0.95rem;
+                color: #555;
+                line-height: 1.55;
+                margin-top: 12px;
+                white-space: pre-wrap;
+                word-break: break-word;
+            }
+
+            /* .keyboard-hint {
+                font-size: 0.9rem;
+                color: #666;
+                text-align: center;
+                max-width: 520px;
+                line-height: 1.5;
+            } */
+
+            @media (max-width: 640px) {
+                .flashcard-stage {
+                    min-height: 280px;
+                }
+
+                .card-face {
+                    padding: 16px 12px;
+                }
+
+                .jp-text {
+                    font-size: clamp(1.6rem, 5vw, 2rem);
+                }
+
+                .translation {
+                    font-size: clamp(1.15rem, 4vw, 1.45rem);
+                }
+
+                .pronunciation,
+                .example-text,
+                .notes-back,
+                .notes-front {
+                    font-size: 0.9rem;
+                }
+            }
+        </style>
+
+        <script>
+            async function includeHTML(file, elementId) {
+                try {
+                    const response = await fetch(file);
+                    if (!response.ok) {
+                        throw new Error(`Error fetching ${file}: ${response.statusText}`);
+                    }
+
+                    const content = await response.text();
+                    document.getElementById(elementId).outerHTML = content;
+                } catch (error) {
+                    console.error("Failed to load content:", error);
+                    document.getElementById(elementId).textContent = "Failed to load content.";
+                }
+            }
+
+            includeHTML("partials/head.html", "head-placeholder");
+            includeHTML("partials/nav.html", "nav-placeholder");
+
+            const MAIN_TSV_PATH = "dicts/travel_JP/basic_japanese_for_travel.tsv";
+            const NOTES_TSV_PATH = "dicts/travel_JP/basic_japanese_for_travel_notes.tsv";
+
+            const FALLBACK_INDEX = {
+                japanese: 0,
+                pronunciation_en: 1,
+                pronunciation_kr: 2,
+                translation_en: 3,
+                translation_kr: 4,
+                example: 5,
+                lesson: 6,
+                notes_front: 7,
+                notes_back: 8
+            };
+
+            let allCards = [];
+            let notesLines = [];
+            let uniqueLessons = [];
+            let filteredCards = [];
+            let currentIndex = 0;
+
+            function normalizeHeader(header) {
+                return header.trim().toLowerCase().replace(/\s+/g, "_");
+            }
+
+            function escapeHtml(str) {
+                return String(str ?? "")
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            }
+
+            function formatBoldMarkup(str) {
+                const escaped = escapeHtml(str ?? "");
+                return escaped.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+            }
+
+            function parseTSVRows(text) {
+                return text
+                    .replace(/^\uFEFF/, "")
+                    .split(/\r?\n/)
+                    .filter(line => line.trim() !== "")
+                    .map(line => line.split("\t"));
+            }
+
+            function parseMainTSV(text) {
+                const rows = parseTSVRows(text);
+                if (!rows.length) return [];
+
+                const firstRow = rows[0].map(normalizeHeader);
+                const looksLikeHeader =
+                    firstRow.includes("lesson") ||
+                    firstRow.includes("notes_front") ||
+                    firstRow.includes("notes_back") ||
+                    firstRow.includes("japanese");
+
+                let headers = null;
+                let dataRows = rows;
+
+                if (looksLikeHeader) {
+                    headers = firstRow;
+                    dataRows = rows.slice(1);
+                }
+
+                function getIndex(key) {
+                    if (headers) {
+                        const found = headers.indexOf(key);
+                        if (found !== -1) return found;
+                    }
+                    return FALLBACK_INDEX[key];
+                }
+
+                const idx = {
+                    japanese: getIndex("japanese"),
+                    pronunciation_en: getIndex("pronunciation_en"),
+                    pronunciation_kr: getIndex("pronunciation_kr"),
+                    translation_en: getIndex("translation_en"),
+                    translation_kr: getIndex("translation_kr"),
+                    example: getIndex("example"),
+                    lesson: getIndex("lesson"),
+                    notes_front: getIndex("notes_front"),
+                    notes_back: getIndex("notes_back")
+                };
+
+                return dataRows.map((row, i) => ({
+                    rowNumber: i,
+                    japanese: (row[idx.japanese] || "").trim(),
+                    pronunciation_en: (row[idx.pronunciation_en] || "").trim(),
+                    pronunciation_kr: (row[idx.pronunciation_kr] || "").trim(),
+                    translation_en: (row[idx.translation_en] || "").trim(),
+                    translation_kr: (row[idx.translation_kr] || "").trim(),
+                    example: (row[idx.example] || "").trim(),
+                    lesson: (row[idx.lesson] || "").trim(),
+                    notes_front: (row[idx.notes_front] || "").trim(),
+                    notes_back: (row[idx.notes_back] || "").trim()
+                })).filter(card => card.japanese !== "");
+            }
+
+            function parseNotesTSV(text) {
+                return text
+                    .replace(/^\uFEFF/, "")
+                    .split(/\r?\n/)
+                    .map(line => line.trim())
+                    .filter(line => line !== "");
+            }
+
+            function resolveBackNotes(noteRefString) {
+                if (!noteRefString) return "";
+
+                const refs = noteRefString
+                    .split(",")
+                    .map(part => part.trim())
+                    .filter(part => part !== "");
+
+                const resolved = refs
+                    .map(ref => {
+                        const n = Number(ref);
+                        if (!Number.isInteger(n) || n < 1) return "";
+                        return notesLines[n - 1] || "";
+                    })
+                    .filter(Boolean);
+
+                return resolved.join(" ");
+            }
+
+            function setStatus(text) {
+                const statusEl = document.getElementById("status-text");
+                if (statusEl) statusEl.textContent = text;
+            }
+
+            function getCardElement() {
+                return document.querySelector(".cards__single");
+            }
+
+            function toggleCard() {
+                const card = getCardElement();
+                if (card) card.classList.toggle("flip");
+            }
+
+            function renderLessonOptions() {
+                const select = document.getElementById("lesson-select");
+                select.innerHTML = "";
+
+                uniqueLessons.forEach((lesson, index) => {
+                    const option = document.createElement("option");
+                    option.value = lesson;
+                    option.textContent = lesson || `(blank lesson ${index + 1})`;
+                    select.appendChild(option);
+                });
+
+                if (uniqueLessons.length > 0) {
+                    select.value = uniqueLessons[0];
+                }
+            }
+
+            function applyLessonFilter(selectedLesson) {
+                filteredCards = allCards.filter(card => card.lesson === selectedLesson);
+                currentIndex = 0;
+                renderCurrentCard();
+            }
+
+            function renderCurrentCard() {
+                const host = document.getElementById("flashcard-host");
+
+                if (!filteredCards.length) {
+                    host.innerHTML = `
+                        <div class="cards__single">
+                            <div class="cards__inner">
+                                <div class="card-face">
+                                    <div class="jp-text">No cards found</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    setStatus("0 / 0");
+                    return;
+                }
+
+                const card = filteredCards[currentIndex];
+                const resolvedNotesBack = resolveBackNotes(card.notes_back);
+
+                host.innerHTML = `
+                    <div class="cards__single" tabindex="0" aria-label="Flashcard">
+                        <div class="cards__inner">
+                            <div class="card-face card-front">
+                                <div class="jp-text">${escapeHtml(card.japanese)}</div>
+                                <div class="notes-front">${formatBoldMarkup(card.notes_front)}</div>
+                                <div class="pronunciation">${escapeHtml(card.pronunciation_en)}</div>
+                                <div class="pronunciation">${escapeHtml(card.pronunciation_kr)}</div>
+                            </div>
+                            <div class="card-face card-back">
+                                <div class="translation">${escapeHtml(card.translation_en)}</div>
+                                <div class="translation">${escapeHtml(card.translation_kr)}</div>
+                                <div class="example-text">${card.example ? "Ex. " + formatBoldMarkup(card.example) : ""}</div>
+                                <div class="notes-back">${formatBoldMarkup(resolvedNotesBack)}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                const cards = document.querySelectorAll(".cards__single");
+                function flipCard() {
+                    this.classList.toggle("flip");
+                }
+                cards.forEach((cardElement) => cardElement.addEventListener("click", flipCard));
+
+                setStatus(`${currentIndex + 1} / ${filteredCards.length}`);
+            }
+
+            function nextCard() {
+                if (!filteredCards.length) return;
+                currentIndex = (currentIndex + 1) % filteredCards.length;
+                renderCurrentCard();
+            }
+
+            function previousCard() {
+                if (!filteredCards.length) return;
+                currentIndex = (currentIndex - 1 + filteredCards.length) % filteredCards.length;
+                renderCurrentCard();
+            }
+
+            async function loadData() {
+                try {
+                    const [mainResponse, notesResponse] = await Promise.all([
+                        fetch(MAIN_TSV_PATH),
+                        fetch(NOTES_TSV_PATH)
+                    ]);
+
+                    if (!mainResponse.ok) {
+                        throw new Error(`Error fetching main TSV: ${mainResponse.statusText}`);
+                    }
+                    if (!notesResponse.ok) {
+                        throw new Error(`Error fetching notes TSV: ${notesResponse.statusText}`);
+                    }
+
+                    const [mainText, notesText] = await Promise.all([
+                        mainResponse.text(),
+                        notesResponse.text()
+                    ]);
+
+                    allCards = parseMainTSV(mainText);
+                    notesLines = parseNotesTSV(notesText);
+
+                    uniqueLessons = [];
+                    const seen = new Set();
+                    allCards.forEach(card => {
+                        if (!seen.has(card.lesson)) {
+                            seen.add(card.lesson);
+                            uniqueLessons.push(card.lesson);
+                        }
+                    });
+
+                    renderLessonOptions();
+
+                    if (uniqueLessons.length > 0) {
+                        applyLessonFilter(uniqueLessons[0]);
+                    } else {
+                        filteredCards = [];
+                        renderCurrentCard();
+                    }
+                } catch (error) {
+                    console.error("Failed to load TSV data:", error);
+                    document.getElementById("flashcard-host").innerHTML = `
+                        <div class="cards__single">
+                            <div class="cards__inner">
+                                <div class="card-face">
+                                    <div class="jp-text">Failed to load TSV data.</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    setStatus("Load error");
+                }
+            }
+
+            document.addEventListener("DOMContentLoaded", async () => {
+                const lessonSelect = document.getElementById("lesson-select");
+                const nextButton = document.getElementById("next-word-btn");
+
+                lessonSelect.addEventListener("change", (event) => {
+                    applyLessonFilter(event.target.value);
+                });
+
+                nextButton.addEventListener("click", () => {
+                    nextCard();
+                });
+
+                document.addEventListener("keydown", (event) => {
+                    const activeTag = document.activeElement ? document.activeElement.tagName : "";
+                    if (activeTag === "INPUT" || activeTag === "TEXTAREA") return;
+
+                    switch (event.key) {
+                        case "ArrowLeft":
+                            event.preventDefault();
+                            previousCard();
+                            break;
+                        case "ArrowRight":
+                            event.preventDefault();
+                            nextCard();
+                            break;
+                        case "Enter":
+                            event.preventDefault();
+                            nextCard();
+                            break;
+                        case "ArrowUp":
+                            event.preventDefault();
+                            toggleCard();
+                            break;
+                        case "ArrowDown":
+                            event.preventDefault();
+                            toggleCard();
+                            break;
+                    }
+                });
+
+                await loadData();
+            });
+        </script>
+    </head>
+
+    <body>
+        <!-- HEAD -->
+        <div id="head-placeholder"></div>
+
+        <!-- MAIN CONTENT -->
+        <!-- insert dropdown box and flipcard here -->
+        <main class="main-wrap">
+            <div class="controls">
+                <label for="lesson-select">Lesson</label>
+                <select id="lesson-select" aria-label="Select lesson"></select>
+            </div>
+
+            <div class="flashcard-stage">
+                <div id="flashcard-host"></div>
+            </div>
+
+            <div class="controls">
+                <button id="next-word-btn" type="button">Next word</button>
+                <div id="status-text" class="status-text"></div>
+            </div>
+
+            <!-- <div class="keyboard-hint">
+                <b>Controls:</b><br>
+                Left arrow: previous word
+                Right arrow / Enter: next word · Up / Down: flip card
+            </div> -->
+        </main>
+        <br><br>
+
+        <!-- NAVIGATION BAR -->
+        <div id="nav-placeholder"></div>
+    </body>
+</html>
