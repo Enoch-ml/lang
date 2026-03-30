@@ -113,7 +113,7 @@
                 //"trunc_chin",
                 //"lyrics_vocab"
             ];
-            let tsv_name = + optionsList[0] + ".tsv";
+            let tsv_name = optionsList[0] + ".tsv";
             const dropdown = document.getElementById("vocabList");
             // Loop through the list and add options to the dropdown
             optionsList.forEach(optionText => {
@@ -147,8 +147,8 @@
                 }
             }
 
-            includeHTML("/partials/head.html", "head-placeholder");
-            includeHTML("/partials/nav.html", "nav-placeholder");
+            includeHTML("../partials/head.html", "head-placeholder");
+            includeHTML("../partials/nav.html", "nav-placeholder");
 
             const lang = "my_chinese";
 
@@ -202,7 +202,7 @@
             // Load and parse the TSV file
             async function loadTSVFile() {
                 try {
-                    const response = await fetch("/dicts/chinese/" + tsv_name);
+                    const response = await fetch("../dicts/chinese/" + tsv_name);
                     const tsvText = await response.text();
 
                     const lines = tsvText.trim().split("\n");

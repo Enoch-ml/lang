@@ -2,11 +2,49 @@
 <html lang="en">
     <head>
         <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title id="page-title">lang</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                text-align: center;
+                padding: 20px;
+            }
+            #message {
+                margin-top: 20px;
+                font-size: 18px;
+                font-weight: bold;
+            }
+            .box {
+                border: 3px solid black;
+                padding: 20px;
+                margin: 20px auto;
+                width: 80%;
+                max-width: 600px;
+                background-color: #f9f9f9;
+                border-radius: 10px;
+                text-align: center;
+            }
+            #user-display {
+                font-size: 16px;
+                font-weight: bold;
+            }
+            #user-display a {
+                text-decoration: none;
+                color: blue;
+                margin-left: 10px;
+            }
+            #user-display a:hover {
+                text-decoration: underline;
+            }
+        </style>
     </head>
 
     <body>
         <!-- HEAD -->
-        <div id="head-placeholder"></div>
+        <div style="float: right;" id="user-display"></div>
+        <br>
+        <h1>practice CJK lang</h1>
 
         <!-- MAIN CONTENT -->
         <div class="box">
@@ -27,49 +65,42 @@
 
             <b style="font-size: 20px;">IMPORTANT FOR TRAVEL</b><br>
             <a href="pages/travel_JP.html">Traveling to Japan 日本への旅行</a>
-
         </div>
 
-		<!-- NAVIGATION BAR -->
-        <div id="nav-placeholder"></div>
+        <!-- NAVIGATION BAR -->
+        <nav style="font-size:14px;">
+            <a href="pages/vocab.html?lang=chinese">中文</a> |
+            <a href="pages/vocab.html?lang=hiragana_monographs">ひらがな</a> |
+            <a href="pages/vocab.html?lang=katakana_monographs">カタカナ</a> |
+            <a href="pages/vocab.html?lang=general_korean">일반 한국어</a> |
+            <a href="pages/vocab.html?lang=personal_korean">개인화 한국어</a><br>
 
-		<!-- SCRIPT -->
+            <a href="pages/chin.html">Cheng & Tsui: Integrated Chinese 中文听说读写</a><br>
+            <a href="pages/genki.html">Genki: An Integrated Course in Elementary Japanese</a><br>
+
+            <a href="pages/travel_JP.html">Traveling to Japan 日本への旅行</a> <br><br>
+
+            <a href="index.html" style="font-size:16px; font-weight:bold;">Home</a>
+        </nav>
+
+        <!-- SCRIPT -->
         <script>
-            async function includeHTML(file, elementId) {
-                try {
-                    const response = await fetch(file);
-                    if (!response.ok) {
-                        throw new Error(`Error fetching ${file}: ${response.statusText}`);
-                    }
+            const loggedInUser = localStorage.getItem("loggedInUser");
+            const userDisplayElement = document.getElementById("user-display");
 
-                    const content = await response.text();
-                    const placeholder = document.getElementById(elementId);
+            if (loggedInUser) {
+                userDisplayElement.innerHTML = `
+                    <span>Welcome, ${loggedInUser}!</span>
+                    <a href="#" id="logout">Logout</a>
+                `;
 
-                    // Replace the placeholder with the loaded content
-                    placeholder.outerHTML = content;
-
-                    // Re-execute all scripts in the included content
-                    const tempDiv = document.createElement("div");
-                    tempDiv.innerHTML = content;
-                    const scripts = tempDiv.querySelectorAll("script");
-
-                    scripts.forEach((script) => {
-                        const newScript = document.createElement("script");
-                        if (script.src) {
-                            newScript.src = script.src;
-                        } else {
-                            newScript.textContent = script.textContent;
-                        }
-                        document.body.appendChild(newScript);
-                    });
-                } catch (error) {
-                    console.error("Failed to load content:", error);
-                    document.getElementById(elementId).textContent = "Failed to load content.";
-                }
+                document.getElementById("logout").addEventListener("click", () => {
+                    localStorage.removeItem("loggedInUser");
+                    window.location.reload();
+                });
+            } else {
+                userDisplayElement.innerHTML = `<a href="pages/login.html">Login</a>`;
             }
-
-            includeHTML("partials/head.html", "head-placeholder");
-            includeHTML("partials/nav.html", "nav-placeholder");
-        </script>		
+        </script>
     </body>
 </html>

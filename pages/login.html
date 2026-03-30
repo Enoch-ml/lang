@@ -59,8 +59,8 @@
                 }
             }
 
-            includeHTML("partials/head.html", "head-placeholder");
-            includeHTML("partials/nav.html", "nav-placeholder");
+            includeHTML("../partials/head.html", "head-placeholder");
+            includeHTML("../partials/nav.html", "nav-placeholder");
 
             async function checkLogin() {
                 const username = document.getElementById("username").value;
@@ -68,7 +68,7 @@
                 const messageElement = document.getElementById("message");
 
                 try {
-                    const response = await fetch("saves/users.txt");
+                    const response = await fetch("../saves/users.txt");
                     const usersText = await response.text();
 
                     // Split the file into lines (handle both \r\n and \n)
@@ -92,7 +92,7 @@
                         messageElement.textContent = "Login successful! Redirecting...";
                         messageElement.style.color = "green";
                         setTimeout(() => {
-                            window.location.href = "index.html";
+                            window.location.href = "../index.html";
                         }, 1000);
                     } else {
                         messageElement.textContent = "Invalid username or password.";
