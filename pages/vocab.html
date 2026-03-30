@@ -44,33 +44,33 @@
         }
       }
 
-      includeHTML("partials/head.html", "head-placeholder");
-      includeHTML("partials/nav.html", "nav-placeholder");
+      includeHTML("/partials/head.html", "head-placeholder");
+      includeHTML("/partials/nav.html", "nav-placeholder");
 
       // Page-specific configuration
       const pageConfig = {
         chinese: {
-          tsv: "dicts/chinese_vocab.tsv",
+          tsv: "/dicts/chinese_vocab.tsv",
           title: "中英翻译练习",
           type_here: "在这里输入中文词汇...",
         },
         hiragana_monographs: {
-          tsv: "dicts/hiragana_monographs.tsv",
+          tsv: "/dicts/hiragana_monographs.tsv",
           title: "ひらがな五十音の練習（発音区別符号付き）",
           type_here: "ここに入力...",
         },
         katakana_monographs: {
-          tsv: "dicts/katakana_monographs.tsv",
+          tsv: "/dicts/katakana_monographs.tsv",
           title: "カタカナ五十音の練習（発音区別符号付き）",
           type_here: "ここに入力...",
         },
         general_korean: {
-          tsv: "dicts/general_korean.tsv",
+          tsv: "/dicts/general_korean.tsv",
           title: "한영 일반 단어 연습",
           type_here: "여기 한글을 입력하세요...",
         },
         personal_korean: {
-          tsv: "dicts/personal_korean.tsv",
+          tsv: "/dicts/personal_korean.tsv",
           title: "한영 개인 단어 연습",
           type_here: "여기 한글을 입력하세요...",
         }
