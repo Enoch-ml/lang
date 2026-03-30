@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+    </head>
+
+    <body>
+        <!-- HEAD -->
+        <div id="head-placeholder"></div>
+
+        <!-- MAIN CONTENT -->
+        <div>
+            PAGE IS BUGGED Don't use >:c
+            username:
+            <input type="text" id="username" /><br>
+            password:
+            <input type="password" id="password" /><br><br>
+            <button id="check_login">Login</button>
+            <button id="create_acc" onclick="window.location.href='create_acc.html';">Create new account</button>
+            <div id="message"></div>
+            <br><br><br>
+        </div>
+
+        <!-- NAVIGATION BAR -->
+        <div id="nav-placeholder"></div>
+
+        <!-- SCRIPT -->
+        <script>
+            async function includeHTML(file, elementId) {
+                try {
+                    const response = await fetch(file);
+                    if (!response.ok) {
+                        throw new Error(`Error fetching ${file}: ${response.statusText}`);
+                    }
+
+                    const content = await response.text();
+                    const placeholder = document.getElementById(elementId);
+
+                    // Replace the placeholder with the loaded content
+                    placeholder.outerHTML = content;
+
+                    // Re-execute all scripts in the included content
+                    const tempDiv = document.createElement("div");
+                    tempDiv.innerHTML = content;
+                    const scripts = tempDiv.querySelectorAll("script");
+
+                    scripts.forEach((script) => {
+                        const newScript = document.createElement("script");
+                        if (script.src) {
+                            newScript.src = script.src;
+                        } else {
+                            newScript.textContent = script.textContent;
+                        }
+                        document.body.appendChild(newScript);
+                    });
+                } catch (error) {
+                    console.error("Failed to load content:", error);
+                    document.getElementById(elementId).textContent = "Failed to load content.";
+                }
+            }
+
+            includeHTML("partials/head.html", "head-placeholder");
+            includeHTML("partials/nav.html", "nav-placeholder");
+
+            async function checkLogin() {
+                const username = document.getElementById("username").value;
+                const password = document.getElementById("password").value;
+                const messageElement = document.getElementById("message");
+
+                try {
+                    const response = await fetch("saves/users.txt");
+                    const usersText = await response.text();
+
+                    // Split the file into lines (handle both \r\n and \n)
+                    const users = usersText.trim().split(/\r?\n/);
+
+                    let isAuthenticated = false;
+
+                    for (const user of users) {
+                        const [storedUser, storedPass] = user.split(";");
+                        if (storedUser === username && storedPass === password) {
+                            isAuthenticated = true;
+                            break;
+                        }
+                    }
+
+                    if (isAuthenticated) {
+                        // Save the logged-in username to localStorage
+                        localStorage.setItem("loggedInUser", username);
+
+                        // Redirect to index.html
+                        messageElement.textContent = "Login successful! Redirecting...";
+                        messageElement.style.color = "green";
+                        setTimeout(() => {
+                            window.location.href = "index.html";
+                        }, 1000);
+                    } else {
+                        messageElement.textContent = "Invalid username or password.";
+                        messageElement.style.color = "red";
+                    }
+                } catch (error) {
+                    console.error("Error loading the users file in saves folder:", error);
+                    messageElement.textContent = "Error loading users file. Please try again.";
+                    messageElement.style.color = "red";
+                }
+            }
+
+            document.addEventListener("DOMContentLoaded", () => {
+                document.getElementById("check_login").addEventListener("click", checkLogin);
+            });
+
+            document.getElementById("password").addEventListener("keydown", function (event) {
+                if (event.key === "Enter") {
+                    event.preventDefault(); // Prevent default form submission (if applicable)
+                    checkLogin();
+                }
+            });
+        </script>
+    </body>
+</html>

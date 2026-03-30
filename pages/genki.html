@@ -3,14 +3,6 @@
     <head>
         <meta charset="utf-8">
         <title>Vocabulary Practice</title>
-        <style>
-            .pinyin-button {
-                width: 25px;
-                height: 25px;
-                margin: 1px;
-                font-size: 16px;
-            }
-        </style>
     </head>
 
     <body>
@@ -22,48 +14,12 @@
         <select id="vocabList"></select>
 
         <div class="box">
-            <!-- <h1 id="page-title">中英翻译实践</h1> -->
+            <!-- <h1 id="page-title">日英翻訳練習</h1> -->
 
             <div id="wordsLeft">Number of words left: 0</div><br>
             <div id="wordBox"><b>Translate word: </b><span id="currentWord"></span></div><br>
 
-            Pinyin:
-            <input type="text" id="pinyinInput" placeholder="Enter pinyin here..." /><br>
-
-            <button class="pinyin-button" id="a1">ā</button>
-            <button class="pinyin-button" id="a2">á</button>
-            <button class="pinyin-button" id="a3">ǎ</button>
-            <button class="pinyin-button" id="a4">à</button><br>
-
-            <button class="pinyin-button" id="e1">ē</button>
-            <button class="pinyin-button" id="e2">é</button>
-            <button class="pinyin-button" id="e3">ě</button>
-            <button class="pinyin-button" id="e4">è</button><br>
-
-            <button class="pinyin-button" id="i1">ī</button>
-            <button class="pinyin-button" id="i2">í</button>
-            <button class="pinyin-button" id="i3">ǐ</button>
-            <button class="pinyin-button" id="i4">ì</button><br>
-
-            <button class="pinyin-button" id="o1">ō</button>
-            <button class="pinyin-button" id="o2">ó</button>
-            <button class="pinyin-button" id="o3">ǒ</button>
-            <button class="pinyin-button" id="o4">ò</button><br>
-
-            <button class="pinyin-button" id="u1">ū</button>
-            <button class="pinyin-button" id="u2">ú</button>
-            <button class="pinyin-button" id="u3">ǔ</button>
-            <button class="pinyin-button" id="u4">ù</button><br>
-
-            <button class="pinyin-button" id="v">ü</button>
-            <button class="pinyin-button" id="v1">ǖ</button>
-            <button class="pinyin-button" id="v2">ǘ</button>
-            <button class="pinyin-button" id="v3">ǚ</button>
-            <button class="pinyin-button" id="v4">ǜ</button><br><br>
-
-
-            Chinese:
-            <input type="text" id="chinInput" placeholder="在这里输入中文词汇..." /><br><br>
+            <input type="text" id="japanInput" placeholder="ここに入力..." /><br><br>
 
             <button id="checkButton">Check</button>
             <button id="answerButton">Show Answer</button>
@@ -82,36 +38,19 @@
             // SELECT A VOCAB LIST //
             /////////////////////////
             const optionsList = [
-                "第一课：开学",
-                "第二课：宿舍生活",
-                "第三课：在饭馆儿",
-                "第四课：买东西",
-                "第五课：选课",
-                "第六课：男朋友女朋友",
-                "第七课：电脑和网络",
-                "第八课：打工",
-                "第九课：教育",
-                "第十课：中国地理",
-                "第十一课：中国的节日",
-                "第十二课：中国的变化",
-                "第十三课：去云南旅游",
-                "第十四课：生活与健康",
-                "第十五课：男女平等",
-                "第十六课：环境保护与节约能源",
-                "第十七课：理财与投资",
-                "第十八课：中国历史",
-                "第十九课：面试",
-                "第二十课：世界变小了",
-                "l1a", "l1b", "l2a", "l2b", "l3a", "l3b", "l4a", "l4b", "l5a", "l5b",
-                "l6a", "l6b", "l7a", "l7b", "l8a", "l8b", "l9a", "l9b", "l10a", "l10b",
-                "l11a", "l11b", "l12a", "l12b", "l13a", "l13b", "l14a", "l14b", "l15a", "l15b",
-                "l16a", "l16b", "l17a", "l17b", "l18a", "l18b", "l19a", "l19b", "l20a", "l20b",
-                "integrated_chinese_1-2", "integrated_chinese_1", "integrated_chinese_2",
-                "radicals", "numerals",
-                //"word_of_day",
-                //"chinese",
-                //"trunc_chin",
-                //"lyrics_vocab"
+                "あいさつ　(Greetings)",
+                "第１課：あたらしいともだち　(New Friends)",
+                "第２課：かいもの　(Shopping)",
+                "第３課：デートの約束　 (Making a Date)",
+                "第４課：初めてのデート　(The First Date)",
+                "第５課：沖縄旅行　(A Trip to Okinawa)",
+                "第６課：ロバートさんの一日　(A Day in Robert's Life)",
+                "第７課：家族の写真　(Family Picture)",
+                "第８課：バーベキュー　(Barbecue)",
+                "第９課：かぶき　(Kabuki)",
+                "第１０課：冬休みの予定　(Winter Vacation Plans)",
+                "第１１課：休みのあと　(After the Vacation)",
+                "第１２課：病気　(Illness)"
             ];
             let tsv_name = optionsList[0] + ".tsv";
             const dropdown = document.getElementById("vocabList");
@@ -147,10 +86,8 @@
                 }
             }
 
-            includeHTML("partials/head.html", "head-placeholder");
-            includeHTML("partials/nav.html", "nav-placeholder");
-
-            const lang = "my_chinese";
+            includeHTML("../partials/head.html", "head-placeholder");
+            includeHTML("../partials/nav.html", "nav-placeholder");
 
             // Initialize variables
             let pairs = [];
@@ -161,8 +98,7 @@
 
             // DOM elements
             const wordBox = document.getElementById("currentWord");
-            const pinyinInput = document.getElementById("pinyinInput");
-            const chinInput = document.getElementById("chinInput");
+            const japanInput = document.getElementById("japanInput");
             const messageElement = document.getElementById("message");
             const solutionElement = document.getElementById("solution");
 
@@ -184,8 +120,7 @@
 
                 // Update the UI
                 wordBox.textContent = currentPair.eng;
-                pinyinInput.value = "";
-                chinInput.value = "";
+                japanInput.value = "";
                 messageElement.textContent = "";
 
                 // Update the "Words Left" counter
@@ -202,15 +137,14 @@
             // Load and parse the TSV file
             async function loadTSVFile() {
                 try {
-                    const response = await fetch("dicts/chinese/" + tsv_name);
+                    const response = await fetch("../dicts/genki/" + tsv_name);
                     const tsvText = await response.text();
 
                     const lines = tsvText.trim().split("\n");
                     pairs = lines.map(line => {
-                        const [chin, pinyin, eng] = line.split("\t");
+                        const [japan, eng] = line.split("\t");
                         return {
-                            chin: chin?.trim() || "",
-                            pinyin: pinyin?.trim() || "",
+                            japan: japan?.trim() || "",
                             eng: eng?.trim() || "",
                         };
                     });
@@ -230,18 +164,16 @@
             function loadWord() {
                 setTimeout(() => {
                         generateNewPair();
-                        pinyinInput.focus();
+                        japanInput.focus();
                     }, 1000);
             }
 
 
             function checkWord() {
-                const userPinyin = pinyinInput.value.trim().toLowerCase();
-                const userChin = chinInput.value.trim();
-                const correctPinyin = currentPair.pinyin.toLowerCase();
-                const correctChin = currentPair.chin;
+                const userJapan = japanInput.value.trim();
+                const correctJapan = currentPair.japan;
 
-                if (userPinyin === correctPinyin && userChin === correctChin) {
+                if (userJapan === correctJapan) {
                     messageElement.textContent = "Correct!";
                     messageElement.style.color = "green";
                     first_try && (changes[currentPair.eng] = (changes[currentPair.eng] || 0) + 1);
@@ -256,11 +188,11 @@
             }
 
             function showAnswer() {
-                solutionElement.textContent = `Pinyin: ${currentPair.pinyin}, Chinese: ${currentPair.chin}`;
+                solutionElement.textContent = `${currentPair.japan}`;
                 setTimeout(() => (solutionElement.textContent = ""), 3000);
             }
 
-            const textInput = document.getElementById("pinyinInput");
+            const textInput = document.getElementById("japanInput");
             function insertCharacter(character) {
                 const start = textInput.selectionStart;
                 const end = textInput.selectionEnd;
@@ -274,48 +206,28 @@
                 textInput.focus();
             }
 
-            // Mapping button IDs to their characters
-            const buttons = {
-                a1: "ā", a2: "á", a3: "ǎ", a4: "à",
-                e1: "ē", e2: "é", e3: "ě", e4: "è",
-                i1: "ī", i2: "í", i3: "ǐ", i4: "ì",
-                o1: "ō", o2: "ó", o3: "ǒ", o4: "ò",
-                u1: "ū", u2: "ú", u3: "ǔ", u4: "ù",
-                v: "ü", v1: "ǖ", v2: "ǘ", v3: "ǚ", v4: "ǜ"
-            };
-
-            // Attach event listeners to buttons
-            Object.keys(buttons).forEach(buttonId => {
-                const button = document.getElementById(buttonId);
-                button.addEventListener("click", () => insertCharacter(buttons[buttonId]));
-            });
-
             // Event Listeners
             document.getElementById("checkButton").addEventListener("click", checkWord);
-            pinyinInput.addEventListener("keydown", function (event) {
-				if (event.key === "Enter") {
-					checkWord();
-				}
-            });
-            document.getElementById("skipButton").addEventListener("click", loadWord);
-            pinyinInput.addEventListener("keydown", function (event) {
-                if (event.key === "Tab") {
-                    event.preventDefault(); // Prevent default tab behavior
-                    chinInput.focus(); // Move focus directly to the chinInput input box
-                }
-            });
-            chinInput.addEventListener("keydown", function (event) {
-				if (event.key === "Enter") {
-					checkWord();
-				}
-            });
-            chinInput.addEventListener("keydown", function (event) {
-                if (event.key === "Tab" && event.shiftKey) {
-                    event.preventDefault(); // Prevent default tab behavior
-                    pinyinInput.focus();
+            japanInput.addEventListener("keydown", function (event) {
+                if (event.key === "Enter") {
+                    checkWord();
+                } else if (event.key === "Tab") {
+                    event.preventDefault();
+                    japanInput.focus();
                 }
             });
             document.getElementById("answerButton").addEventListener("click", showAnswer);
+            document.getElementById("skipButton").addEventListener("click", function () {
+                first_try = true;
+                messageElement.textContent = "";
+                solutionElement.textContent = "";
+
+                setTimeout(() => {
+                    generateNewPair();
+                    japanInput.focus();
+                }, 1000); // 1-second delay
+            });
+
 
             loadTSVFile();
         </script>

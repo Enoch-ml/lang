@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+    </head>
+
+    <body>
+        <!-- HEAD -->
+        <div id="head-placeholder"></div>
+
+        <!-- MAIN CONTENT -->
+        <div class="box">
+            <b>Create a new account:</b><br><br>
+
+            Enter username:
+            <input type="text" id="username" />
+            <div id="valid_username"></div><br>
+            
+            Enter password:
+            <input type="password" id="password" />
+            <div id="valid_password"></div><br>
+
+            Re-enter password:
+            <input type="password" id="repassword" />
+            <div id="valid_repassword"></div><br><br>
+
+            <button id="create_acc">Create new account</button><br>
+        </div>
+
+
+        <!-- NAVIGATION BAR -->
+        <div id="nav-placeholder"></div>
+
+        <!-- SCRIPT -->
+        <script>
+            async function includeHTML(file, elementId) {
+                try {
+                    const response = await fetch(file);
+                    if (!response.ok) {
+                        throw new Error(`Error fetching ${file}: ${response.statusText}`);
+                    }
+
+                    const content = await response.text();
+                    document.getElementById(elementId).outerHTML = content;
+
+                    // Execute scripts inside the included file
+                    const scripts = document.querySelectorAll(`#${elementId} script`);
+                    scripts.forEach((script) => {
+                        const newScript = document.createElement("script");
+                        newScript.textContent = script.textContent;
+                        document.body.appendChild(newScript);
+                    });
+                } catch (error) {
+                    console.error("Failed to load content:", error);
+                    document.getElementById(elementId).textContent = "Failed to load content.";
+                }
+            }
+
+
+            includeHTML("partials/head.html", "head-placeholder");
+            includeHTML("partials/nav.html", "nav-placeholder");
+            
+
+
+
+            // PASSWORD CREATION //
+
+            let valid_user = false;
+            let valid_pass = false;
+            let valid_repass = false;
+            let input_username = "";
+            let input_password = "";
+            let input_repassword = "";
+            
+            document.getElementById("username").addEventListener("blur", async function () {
+                const username = this.value.trim(); // Get the input value and trim any spaces
+                const messageElement = document.getElementById("valid_username");
+                input_username = username;
+
+                // Check if username only contains allowed characters
+                const validPattern = /^[a-zA-Z0-9_-]+$/;
+                if (!validPattern.test(username)) {
+                    valid_user = false;
+                    messageElement.textContent = "Username must only consist of letters, numbers, _ and -.";
+                    messageElement.style.color = "red";
+                    return;
+                } else {
+                    messageElement.textContent = "";
+                }
+
+
+                // Check if username is unique to database
+                try {
+                    // Fetch users list
+                    const response = await fetch("saves/users.txt");
+                    const users_text = await response.text();
+
+                    // Parse the file into lines and extract pairs
+                    const users = users_text.trim().split("\r\n");
+
+                    if (users.split(";")[0].includes(username)) {
+                        valid_user = false;
+                        messageElement.textContent = "Username is taken. Please choose another.";
+                        messageElement.style.color = "red";
+                        return;
+                    } else {
+                        valid_user = true;
+                        messageElement.textContent = "";
+                    }
+                    
+                } catch (error) {
+                    console.error("Error loading the users file in saves folder:", error); // Log the error for debugging
+                    messageElement.textContent = "Error loading users file in saves folder. Please try again.";
+                    messageElement.style.color = "red";
+                }
+            });
+
+            document.getElementById("password").addEventListener("blur", function () {
+                const password = this.value.trim(); // Get the input value and trim any spaces
+                const messageElement = document.getElementById("valid_password");
+                input_password = password;
+                
+                // console.log("password:", password);
+                // console.log("i_password:", input_password, "i_repassword:", input_repassword);
+
+                // Check if the password length is at least 6 characters
+                if (password.length < 6) {
+                    valid_pass = false;
+                    messageElement.textContent = "Password must contain 6+ characters.";
+                    messageElement.style.color = "red";
+                    return;
+                } else {
+                    valid_pass = true;
+                    messageElement.textContent = "";
+                }
+
+                if (check_matching(messageElement)) {
+                    valid_pass = true;
+                } else {
+                    valid_pass = false;
+                }
+            });
+
+            document.getElementById("repassword").addEventListener("blur", function () {
+                const repassword = document.getElementById("repassword").value.trim(); // Get the repassword value
+                const messageElement = document.getElementById("valid_repassword");
+                input_repassword = repassword;
+
+                // console.log("repassword:", repassword);
+                // console.log("i_password:", input_password, "i_repassword:", input_repassword);
+                
+                if (check_matching(messageElement)) {
+                    valid_repass = true;
+                } else {
+                    valid_repass = false;
+                }
+            });
+
+            function check_matching(messageElement) {
+                // Check if the passwords match
+                if (input_password !== input_repassword) {
+                    messageElement.textContent = "Passwords must match.";
+                    messageElement.style.color = "red";
+                    return false;
+                } else {
+                    messageElement.textContent = "";
+                    return true;
+                }
+            }
+            
+            const fs = require('fs');
+            const path = require('path');
+
+            function createFolder(username) {
+                const folderPath = path.join(__dirname, 'saves', username);
+
+                // Create the folder (recursive: true allows creation of nested folders)
+                fs.mkdir(folderPath, { recursive: true }, (err) => {
+                    if (err) {
+                        console.error("Error creating folder:", err);
+                    } else {
+                        console.log(`Folder created: ${folderPath}`);
+                    }
+                });
+            }
+
+            function createAccount() {
+                if (valid_user && valid_pass && valid_repass) {
+                    // save account information
+                    fs.readFile('saves/users.txt', 'utf8', (err, data) => {
+                        if (err) throw err;
+
+                        console.log("Original Content:", data);
+
+                        // Modify the content
+                        const updatedContent = data + "\n" + input_username;
+
+                        // Write the updated content back to the file
+                        fs.writeFile('saves/users.txt', updatedContent, 'utf8', (err) => {
+                            if (err) throw err;
+                            console.log("File updated successfully!");
+                        });
+                    });
+
+                    createFolder(input_username);
+
+                    // redirect to homepage, and log in
+                }
+            }
+            
+            document.getElementById("create_acc").addEventListener("click", createAccount());
+        </script>
+    </body>
+</html>

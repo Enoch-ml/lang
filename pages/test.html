@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insert "A" Example</title>
+</head>
+<body>
+    <h1>Insert "A" at Cursor Position</h1>
+    <input type="text" id="textInput" placeholder="Type something here..." />
+    <button id="insertAButton">A</button>
+
+    <script>
+        const textInput = document.getElementById("textInput");
+        const insertAButton = document.getElementById("insertAButton");
+
+        insertAButton.addEventListener("click", () => {
+            const start = textInput.selectionStart;
+            const end = textInput.selectionEnd;
+            const text = textInput.value;
+
+            // Insert "A" at the cursor position
+            textInput.value = text.slice(0, start) + "A" + text.slice(end);
+
+            // Move the cursor to the position after the inserted "A"
+            textInput.setSelectionRange(start + 1, start + 1);
+            textInput.focus();
+        });
+    </script>
+</body>
+</html>
