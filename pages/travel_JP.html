@@ -78,6 +78,39 @@
                 background: #f1f1f1;
             }
 
+            .bottom-controls {
+                width: 100%;
+                max-width: 420px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+
+            .bottom-controls button {
+                font-size: 1rem;
+                padding: 10px 14px;
+                border: 1px solid #999;
+                border-radius: 8px;
+                background: #fff;
+                cursor: pointer;
+            }
+
+            .bottom-controls button:hover {
+                background: #f1f1f1;
+            }
+
+            .tts-toggle {
+                background: #fdecec;
+                border-color: #d88;
+            }
+
+            .tts-toggle.on {
+                background: #eaf8ea;
+                border-color: #7fb27f;
+            }
+
             .status-text {
                 min-height: 1.2em;
                 font-size: 0.95rem;
@@ -95,8 +128,10 @@
             }
 
             .cards__single {
-                width: min(92vw, 640px);
-                aspect-ratio: 5 / 3;
+                --card-width: min(92vw, 640px);
+                width: var(--card-width);
+                height: calc(var(--card-width) * 3 / 5);
+                flex: 0 0 auto;
                 cursor: pointer;
             }
 
@@ -127,6 +162,7 @@
                 justify-content: center;
                 align-items: center;
                 text-align: center;
+                overflow: hidden;
             }
 
             .card-back {
@@ -253,9 +289,6 @@
                 }
             }
 
-            includeHTML("../partials/head.html", "head-placeholder");
-            includeHTML("../partials/nav.html", "nav-placeholder");
-
             const MAIN_TSV_PATH = "../dicts/travel_JP/basic_japanese_for_travel.tsv";
             const NOTES_TSV_PATH = "../dicts/travel_JP/basic_japanese_for_travel_notes.tsv";
 
@@ -276,6 +309,80 @@
             let uniqueLessons = [];
             let filteredCards = [];
             let currentIndex = 0;
+
+            let ttsEnabled = localStorage.getItem("travelJPTtsEnabled") === "true";
+            let speechVoices = [];
+
+            function refreshVoices() {
+                if (!("speechSynthesis" in window)) return;
+                speechVoices = window.speechSynthesis.getVoices();
+            }
+
+            function stopSpeech() {
+                if ("speechSynthesis" in window) {
+                    window.speechSynthesis.cancel();
+                }
+            }
+
+            function getJapaneseVoice() {
+                return speechVoices.find(voice =>
+                    voice.lang && voice.lang.toLowerCase().startsWith("ja")
+                ) || null;
+            }
+
+            function speakJapanese(text, force = false) {
+                if (!("speechSynthesis" in window)) return;
+                if (!text) return;
+                if (!ttsEnabled && !force) return;
+
+                stopSpeech();
+
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = "ja-JP";
+                utterance.rate = 0.95;
+                utterance.pitch = 1;
+
+                const japaneseVoice = getJapaneseVoice();
+                if (japaneseVoice) {
+                    utterance.voice = japaneseVoice;
+                }
+
+                window.speechSynthesis.speak(utterance);
+            }
+
+            function playCurrentCardAudio(force = true) {
+                if (!filteredCards.length) return;
+                speakJapanese(filteredCards[currentIndex].japanese, force);
+            }
+
+            function updateTtsButton() {
+                const button = document.getElementById("tts-toggle-btn");
+                if (!button) return;
+
+                button.textContent = ttsEnabled ? "🔊 Audio On" : "🔇 Audio Off";
+                button.setAttribute("aria-pressed", String(ttsEnabled));
+                button.classList.toggle("on", ttsEnabled);
+                button.title = ttsEnabled ? "Turn audio off" : "Turn audio on";
+            }
+
+            function setTtsEnabled(nextValue, speakNow = false) {
+                ttsEnabled = nextValue;
+                localStorage.setItem("travelJPTtsEnabled", String(ttsEnabled));
+                updateTtsButton();
+
+                if (!ttsEnabled) {
+                    stopSpeech();
+                } else if (speakNow && filteredCards.length) {
+                    speakJapanese(filteredCards[currentIndex].japanese, true);
+                }
+            }
+
+            if ("speechSynthesis" in window) {
+                refreshVoices();
+                if (typeof window.speechSynthesis.onvoiceschanged !== "undefined") {
+                    window.speechSynthesis.onvoiceschanged = refreshVoices;
+                }
+            }
 
             function normalizeHeader(header) {
                 return header.trim().toLowerCase().replace(/\s+/g, "_");
@@ -420,6 +527,8 @@
             }
 
             function renderCurrentCard() {
+                stopSpeech();
+
                 const host = document.getElementById("flashcard-host");
 
                 if (!filteredCards.length) {
@@ -465,6 +574,13 @@
                 cards.forEach((cardElement) => cardElement.addEventListener("click", flipCard));
 
                 setStatus(`${currentIndex + 1} / ${filteredCards.length}`);
+                updateTtsButton();
+
+                if (ttsEnabled) {
+                    requestAnimationFrame(() => {
+                        speakJapanese(card.japanese);
+                    });
+                }
             }
 
             function nextCard() {
@@ -534,8 +650,12 @@
             }
 
             document.addEventListener("DOMContentLoaded", async () => {
+                await includeHTML("../partials/head.html", "head-placeholder");
+                await includeHTML("../partials/nav.html", "nav-placeholder");
+
                 const lessonSelect = document.getElementById("lesson-select");
                 const nextButton = document.getElementById("next-word-btn");
+                const ttsButton = document.getElementById("tts-toggle-btn");
 
                 lessonSelect.addEventListener("change", (event) => {
                     applyLessonFilter(event.target.value);
@@ -545,9 +665,22 @@
                     nextCard();
                 });
 
+                ttsButton.addEventListener("click", () => {
+                    const nextValue = !ttsEnabled;
+                    setTtsEnabled(nextValue, nextValue);
+                });
+
                 document.addEventListener("keydown", (event) => {
                     const activeTag = document.activeElement ? document.activeElement.tagName : "";
                     if (activeTag === "INPUT" || activeTag === "TEXTAREA") return;
+
+                    if (event.code === "Space") {
+                        event.preventDefault();
+                        if (ttsEnabled) {
+                            playCurrentCardAudio(false);
+                        }
+                        return;
+                    }
 
                     switch (event.key) {
                         case "ArrowLeft":
@@ -573,7 +706,12 @@
                     }
                 });
 
+                updateTtsButton();
                 await loadData();
+            });
+
+            window.addEventListener("beforeunload", () => {
+                stopSpeech();
             });
         </script>
     </head>
@@ -593,8 +731,12 @@
                 <div id="flashcard-host"></div>
             </div>
 
-            <div class="controls">
+            <div class="bottom-controls">
+                <button id="tts-toggle-btn" type="button" class="tts-toggle" aria-pressed="false"></button>
                 <button id="next-word-btn" type="button">Next word</button>
+            </div>
+
+            <div class="controls">
                 <div id="status-text" class="status-text"></div>
             </div>
         </main>
