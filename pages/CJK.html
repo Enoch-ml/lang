@@ -124,7 +124,7 @@
   <div id="nav-slot"></div>
   <script>
     // Use a relative path so it works on GitHub Pages subfolders too
-    fetch('./partials/nav.html')
+    fetch('../partials/nav.html')
       .then(r => r.ok ? r.text() : '')
       .then(html => {
         if (!html) return;
@@ -158,9 +158,9 @@
     async function loadData() {
       if (!zhData) {
         [zhData, jaData, koData] = await Promise.all([
-          fetch('./data/zh.json').then(r => r.json()),
-          fetch('./data/ja.json').then(r => r.json()),
-          fetch('./data/ko.json').then(r => r.json())
+          fetch('../data/zh.json').then(r => r.json()),
+          fetch('../data/ja.json').then(r => r.json()),
+          fetch('../data/ko.json').then(r => r.json())
         ]);
       }
     }

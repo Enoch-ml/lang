@@ -2,6 +2,78 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <title>Vocabulary Practice</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        padding: 20px;
+        margin: 0;
+      }
+
+      .box {
+        border: 3px solid black;
+        padding: 20px;
+        margin: 20px auto;
+        width: 80%;
+        max-width: 600px;
+        background-color: #f9f9f9;
+        border-radius: 10px;
+        text-align: center;
+      }
+
+      #user-display {
+        font-size: 16px;
+        font-weight: bold;
+      }
+
+      #user-display a {
+        text-decoration: none;
+        color: blue;
+        margin-left: 10px;
+      }
+
+      #user-display a:hover {
+        text-decoration: underline;
+      }
+
+      #wordBox {
+        font-size: 18px;
+      }
+
+      #inputBox {
+        width: 80%;
+        max-width: 360px;
+        padding: 8px;
+        font-size: 16px;
+      }
+
+      #message {
+        margin-top: 8px;
+        min-height: 1.2em;
+        font-size: 16px;
+        font-weight: bold;
+      }
+
+      #solution {
+        margin-top: 4px;
+        font-weight: bold;
+        min-height: 1.2em;
+      }
+
+      #statusBar {
+        margin-bottom: 8px;
+      }
+
+      #saveChangesButton,
+      #checkButton,
+      #answerButton {
+        padding: 8px 12px;
+        font-size: 15px;
+        margin: 2px;
+        cursor: pointer;
+      }
+    </style>
   </head>
 
   <body>
@@ -10,9 +82,9 @@
 
     <!-- MAIN CONTENT -->
     <div class="box">
-      <h1 id="page-title" style="font-size:28px;">Vocabulary Practice</h1>
+      <h1 id="page-title" style="font-size: 28px;">Vocabulary Practice</h1>
 
-      <div id="statusBar" style="margin-bottom:8px;">
+      <div id="statusBar" style="margin-bottom: 8px;">
         <span id="remainingLabel">Words remaining: <span id="remainingCount">—</span></span>
       </div>
 
@@ -21,12 +93,15 @@
       <input type="text" id="inputBox" placeholder="Enter your answer here..." />
       <button id="checkButton">Check</button>
       <button id="answerButton">Show answer</button>
-      <div id="message" style="margin-top:6px;"></div>
-      <div id="solution" style="margin-top:4px; font-weight:bold;"></div>
+      <div id="message"></div>
+      <div id="solution"></div>
     </div>
 
     <button id="saveChangesButton">Save progress</button>
     <br /><br />
+
+    <!-- NAVIGATION BAR -->
+    <div id="nav-placeholder"></div>
 
     <!-- SCRIPT -->
     <script>
@@ -36,48 +111,73 @@
           if (!response.ok) {
             throw new Error(`Error fetching ${file}: ${response.statusText}`);
           }
+
           const content = await response.text();
-          document.getElementById(elementId).outerHTML = content;
+          const placeholder = document.getElementById(elementId);
+
+          const tempDiv = document.createElement("div");
+          tempDiv.innerHTML = content;
+
+          const scripts = Array.from(tempDiv.querySelectorAll("script")).map((script) => {
+            const newScript = document.createElement("script");
+            Array.from(script.attributes).forEach(attr => {
+              newScript.setAttribute(attr.name, attr.value);
+            });
+            newScript.textContent = script.textContent;
+            script.remove();
+            return newScript;
+          });
+
+          const fragment = document.createDocumentFragment();
+          while (tempDiv.firstChild) {
+            fragment.appendChild(tempDiv.firstChild);
+          }
+
+          placeholder.replaceWith(fragment);
+
+          scripts.forEach((script) => {
+            document.body.appendChild(script);
+          });
         } catch (error) {
           console.error("Failed to load content:", error);
-          document.getElementById(elementId).textContent = "Failed to load content.";
+          const target = document.getElementById(elementId);
+          if (target) {
+            target.textContent = "Failed to load content.";
+          }
         }
       }
-
-      includeHTML("../partials/head.html", "head-placeholder");
-      includeHTML("../partials/nav.html", "nav-placeholder");
 
       // Page-specific configuration
       const pageConfig = {
         chinese: {
           tsv: "../dicts/chinese_vocab.tsv",
           title: "中英翻译练习",
-          type_here: "在这里输入中文词汇...",
+          type_here: "在这里输入中文词汇..."
         },
         hiragana_monographs: {
           tsv: "../dicts/hiragana_monographs.tsv",
           title: "ひらがな五十音の練習（発音区別符号付き）",
-          type_here: "ここに入力...",
+          type_here: "ここに入力..."
         },
         katakana_monographs: {
           tsv: "../dicts/katakana_monographs.tsv",
           title: "カタカナ五十音の練習（発音区別符号付き）",
-          type_here: "ここに入力...",
+          type_here: "ここに入力..."
         },
         general_korean: {
           tsv: "../dicts/general_korean.tsv",
           title: "한영 일반 단어 연습",
-          type_here: "여기 한글을 입력하세요...",
+          type_here: "여기 한글을 입력하세요..."
         },
         personal_korean: {
           tsv: "../dicts/personal_korean.tsv",
           title: "한영 개인 단어 연습",
-          type_here: "여기 한글을 입력하세요...",
+          type_here: "여기 한글을 입력하세요..."
         }
       };
 
       const urlParams = new URLSearchParams(window.location.search);
-      let lang = urlParams.get("lang") || "chinese"; // use let so we can reassign
+      let lang = urlParams.get("lang") || "chinese";
       if (!pageConfig[lang]) {
         console.warn(`Invalid lang value: ${lang}. Falling back to default "chinese".`);
         lang = "chinese";
@@ -88,10 +188,10 @@
       document.getElementById("inputBox").placeholder = pageConfig[lang].type_here;
 
       // --- State ---
-      let pairs = [];            // [{answer, hint, weight?}, ...]
-      let order = [];            // shuffled array of indices to visit exactly once
-      let currentIndex = null;   // current index in pairs
-      let changes = {};          // { answer: +deltaWeight }
+      let pairs = [];
+      let order = [];
+      let currentIndex = null;
+      let changes = {};
       let first_try = true;
 
       // Elements
@@ -101,7 +201,6 @@
       const solutionElement = document.getElementById("solution");
       const remainingCountEl = document.getElementById("remainingCount");
 
-      // Utilities
       function fisherYatesShuffle(arr) {
         for (let i = arr.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
@@ -116,10 +215,14 @@
       async function loadTSVFile() {
         try {
           const response = await fetch(pageConfig[lang].tsv);
+          if (!response.ok) {
+            throw new Error(`Error fetching TSV: ${response.statusText}`);
+          }
+
           const tsvText = await response.text();
 
           const lines = tsvText
-            .split("\n")
+            .split(/\r?\n/)
             .map(l => l.trim())
             .filter(Boolean);
 
@@ -132,17 +235,14 @@
           });
 
           if (pairs.length === 0) {
-            messageElement.textContent = "No words available";
+            messageElement.textContent = "No words available.";
             messageElement.style.color = "red";
             return;
           }
 
-          // Build a visit-once order and shuffle
           order = pairs.map((_, i) => i);
           fisherYatesShuffle(order);
           updateRemainingCount();
-
-          // Start the first item
           nextPair();
         } catch (error) {
           console.error("Error loading the TSV file:", error);
@@ -151,33 +251,32 @@
         }
       }
 
-			function nextPair() {
-				solutionElement.textContent = ""; // clear shown answer
+      function nextPair() {
+        solutionElement.textContent = "";
 
-				if (order.length === 0) {
-					// finished one full cycle, so reshuffle and reset
-					order = pairs.map((_, i) => i);
-					fisherYatesShuffle(order);
+        if (order.length === 0) {
+          order = pairs.map((_, i) => i);
+          fisherYatesShuffle(order);
 
-					messageElement.textContent = "Restarting...";
-					messageElement.style.color = "green";
+          messageElement.textContent = "Restarting...";
+          messageElement.style.color = "green";
 
-					setTimeout(() => {
-						messageElement.textContent = "";
-						nextPair();
-					}, 1000);
-					return;
-				}
+          setTimeout(() => {
+            messageElement.textContent = "";
+            nextPair();
+          }, 1000);
+          return;
+        }
 
-				currentIndex = order.shift(); // take next index once
-				const currentPair = pairs[currentIndex];
-				wordBox.textContent = currentPair.hint;
-				messageElement.textContent = "";
-				inputBox.value = "";
-				first_try = true;
+        currentIndex = order.shift();
+        const currentPair = pairs[currentIndex];
+        wordBox.textContent = currentPair.hint;
+        messageElement.textContent = "";
+        inputBox.value = "";
+        first_try = true;
 
-				updateRemainingCount();
-			}
+        updateRemainingCount();
+      }
 
       function checkWord() {
         if (currentIndex === null) return;
@@ -190,11 +289,10 @@
           messageElement.style.color = "green";
 
           if (first_try) {
-            // Track weight increment on first-try correct
             changes[currentPair.answer] = (changes[currentPair.answer] ?? 0) + 1;
           }
 
-          first_try = true; // reset for next item
+          first_try = true;
           setTimeout(() => {
             messageElement.textContent = "";
             nextPair();
@@ -203,54 +301,67 @@
           messageElement.textContent = "Incorrect. Try again.";
           messageElement.style.color = "red";
           first_try = false;
-          // keep same item; do not advance
-          setTimeout(() => { messageElement.textContent = ""; }, 800);
+          setTimeout(() => {
+            messageElement.textContent = "";
+          }, 800);
         }
       }
 
       function showAnswer() {
         if (currentIndex === null) return;
         solutionElement.textContent = pairs[currentIndex].answer;
-        setTimeout(() => (solutionElement.textContent = ""), 3000);
+        setTimeout(() => {
+          solutionElement.textContent = "";
+        }, 3000);
       }
 
-      function saveChanges() {
-        // Merge changes into weights
+      async function saveChanges() {
         pairs.forEach(p => {
-          if (changes[p.answer]) p.weight = (Number(p.weight) || 0) + changes[p.answer];
+          if (changes[p.answer]) {
+            p.weight = (Number(p.weight) || 0) + changes[p.answer];
+          }
         });
 
         const updatedTSV = pairs
           .map(p => `${p.answer}\t${p.hint}\t${p.weight}`)
           .join("\n");
 
-        // Option 1: POST to server (if you have an endpoint)
-        fetch("/save-updated-tsv", {
-          method: "POST",
-          headers: { "Content-Type": "text/plain" },
-          body: updatedTSV
-        }).then(r => {
-          if (r.ok) {
-            alert("Changes saved successfully!");
-          } else {
-            alert("Failed to save changes.");
-          }
-        }).catch(() => {
-          // swallow
-        });
+        try {
+          const response = await fetch("/api/save-updated-tsv", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              lang,
+              tsvPath: pageConfig[lang].tsv,
+              content: updatedTSV
+            })
+          });
 
-        // Option 2: Download locally
+          if (response.ok) {
+            alert("Changes saved successfully!");
+            changes = {};
+          } else {
+            alert("Failed to save changes on server. Downloading local backup instead.");
+            downloadBackup(updatedTSV);
+          }
+        } catch (error) {
+          downloadBackup(updatedTSV);
+        }
+      }
+
+      function downloadBackup(updatedTSV) {
         const blob = new Blob([updatedTSV], { type: "text/plain" });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = "updated_vocab.tsv";
+        link.download = `updated_${lang}.tsv`;
         link.click();
       }
 
-      // Events
       document.getElementById("checkButton").addEventListener("click", checkWord);
       inputBox.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") checkWord();
+        if (event.key === "Enter") {
+          checkWord();
+        }
       });
       document.getElementById("answerButton").addEventListener("click", showAnswer);
       document.getElementById("saveChangesButton").addEventListener("click", saveChanges);
@@ -262,10 +373,11 @@
         }
       });
 
-      loadTSVFile();
+      document.addEventListener("DOMContentLoaded", async () => {
+        await includeHTML("../partials/head.html", "head-placeholder");
+        await includeHTML("../partials/nav.html", "nav-placeholder");
+        await loadTSVFile();
+      });
     </script>
-
-    <!-- NAVIGATION BAR -->
-    <div id="nav-placeholder"></div>
   </body>
 </html>

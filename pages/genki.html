@@ -3,6 +3,68 @@
     <head>
         <meta charset="utf-8">
         <title>Vocabulary Practice</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                text-align: center;
+                padding: 20px;
+            }
+            #message {
+                margin-top: 20px;
+                font-size: 18px;
+                font-weight: bold;
+            }
+            .box {
+                border: 3px solid black;
+                padding: 20px;
+                margin: 20px auto;
+                width: 80%;
+                max-width: 600px;
+                background-color: #f9f9f9;
+                border-radius: 10px;
+                text-align: center;
+            }
+            #user-display {
+                font-size: 16px;
+                font-weight: bold;
+            }
+            #user-display a {
+                text-decoration: none;
+                color: blue;
+                margin-left: 10px;
+            }
+            #user-display a:hover {
+                text-decoration: underline;
+            }
+            #wordsLeft {
+                font-size: 16px;
+                font-weight: bold;
+            }
+            #wordBox {
+                font-size: 18px;
+            }
+            #japanInput {
+                width: 80%;
+                max-width: 320px;
+                padding: 8px;
+                font-size: 16px;
+            }
+            button {
+                padding: 8px 12px;
+                font-size: 15px;
+                margin: 2px;
+                cursor: pointer;
+            }
+            #solution {
+                margin-top: 10px;
+                font-size: 16px;
+            }
+            select {
+                margin-bottom: 12px;
+                padding: 6px 8px;
+                font-size: 15px;
+            }
+        </style>
     </head>
 
     <body>
@@ -52,24 +114,24 @@
                 "第１１課：休みのあと　(After the Vacation)",
                 "第１２課：病気　(Illness)"
             ];
+
             let tsv_name = optionsList[0] + ".tsv";
             const dropdown = document.getElementById("vocabList");
-            // Loop through the list and add options to the dropdown
+
             optionsList.forEach(optionText => {
-                let option = document.createElement("option");
-                option.value = optionText.toLowerCase().replace(/\s+/g, "-"); // Convert to a safe value
+                const option = document.createElement("option");
+                option.value = optionText.toLowerCase().replace(/\s+/g, "-");
                 option.textContent = optionText;
                 dropdown.appendChild(option);
             });
+
             dropdown.addEventListener("change", function () {
-                let selectedText = dropdown.options[dropdown.selectedIndex].text;
+                const selectedText = dropdown.options[dropdown.selectedIndex].text;
                 tsv_name = selectedText + ".tsv";
                 loadTSVFile();
             });
             /////////////////////////
             /////////////////////////
-
-            
 
             async function includeHTML(file, elementId) {
                 try {
@@ -79,10 +141,37 @@
                     }
 
                     const content = await response.text();
-                    document.getElementById(elementId).outerHTML = content;
+                    const placeholder = document.getElementById(elementId);
+
+                    const tempDiv = document.createElement("div");
+                    tempDiv.innerHTML = content;
+
+                    const scripts = Array.from(tempDiv.querySelectorAll("script")).map((script) => {
+                        const newScript = document.createElement("script");
+                        Array.from(script.attributes).forEach(attr => {
+                            newScript.setAttribute(attr.name, attr.value);
+                        });
+                        newScript.textContent = script.textContent;
+                        script.remove();
+                        return newScript;
+                    });
+
+                    const fragment = document.createDocumentFragment();
+                    while (tempDiv.firstChild) {
+                        fragment.appendChild(tempDiv.firstChild);
+                    }
+
+                    placeholder.replaceWith(fragment);
+
+                    scripts.forEach((script) => {
+                        document.body.appendChild(script);
+                    });
                 } catch (error) {
                     console.error("Failed to load content:", error);
-                    document.getElementById(elementId).textContent = "Failed to load content.";
+                    const target = document.getElementById(elementId);
+                    if (target) {
+                        target.textContent = "Failed to load content.";
+                    }
                 }
             }
 
@@ -92,9 +181,9 @@
             // Initialize variables
             let pairs = [];
             let currentPair = {};
-            let prob_dist = [];
             let changes = {};
             let first_try = true;
+            let unusedPairs = [];
 
             // DOM elements
             const wordBox = document.getElementById("currentWord");
@@ -102,45 +191,43 @@
             const messageElement = document.getElementById("message");
             const solutionElement = document.getElementById("solution");
 
-
-            let unusedPairs = [...pairs]; // Create a copy of the pairs array for tracking unused pairs
             function generateNewPair() {
-                // Check if there are any unused pairs left
                 if (unusedPairs.length === 0) {
-                    // Reset unusedPairs if all pairs have been used
                     unusedPairs = [...pairs];
                     console.log("All pairs used. Resetting...");
                 }
 
-                // Select a random index from the unusedPairs array
                 const randomIndex = Math.floor(Math.random() * unusedPairs.length);
-
-                // Retrieve and remove the selected pair from unusedPairs
                 currentPair = unusedPairs.splice(randomIndex, 1)[0];
 
-                // Update the UI
                 wordBox.textContent = currentPair.eng;
                 japanInput.value = "";
                 messageElement.textContent = "";
+                solutionElement.textContent = "";
 
-                // Update the "Words Left" counter
                 updateWordsLeft();
             }
-
 
             function updateWordsLeft() {
                 const wordsLeftElement = document.getElementById("wordsLeft");
                 wordsLeftElement.textContent = `Words Left: ${unusedPairs.length}`;
             }
 
-
             // Load and parse the TSV file
             async function loadTSVFile() {
                 try {
                     const response = await fetch("../dicts/genki/" + tsv_name);
+                    if (!response.ok) {
+                        throw new Error(`Error fetching TSV: ${response.statusText}`);
+                    }
+
                     const tsvText = await response.text();
 
-                    const lines = tsvText.trim().split("\n");
+                    const lines = tsvText
+                        .trim()
+                        .split(/\r?\n/)
+                        .filter(line => line.trim() !== "");
+
                     pairs = lines.map(line => {
                         const [japan, eng] = line.split("\t");
                         return {
@@ -149,11 +236,10 @@
                         };
                     });
 
-                    // Initialize unusedPairs and update the counter
                     unusedPairs = [...pairs];
                     updateWordsLeft();
-
                     generateNewPair();
+                    japanInput.focus();
                 } catch (error) {
                     console.error("Error loading the TSV file:", error);
                     messageElement.textContent = "Error loading the word list. Please try again.";
@@ -163,11 +249,10 @@
 
             function loadWord() {
                 setTimeout(() => {
-                        generateNewPair();
-                        japanInput.focus();
-                    }, 1000);
+                    generateNewPair();
+                    japanInput.focus();
+                }, 1000);
             }
-
 
             function checkWord() {
                 const userJapan = japanInput.value.trim();
@@ -176,10 +261,11 @@
                 if (userJapan === correctJapan) {
                     messageElement.textContent = "Correct!";
                     messageElement.style.color = "green";
-                    first_try && (changes[currentPair.eng] = (changes[currentPair.eng] || 0) + 1);
+                    if (first_try) {
+                        changes[currentPair.eng] = (changes[currentPair.eng] || 0) + 1;
+                    }
                     first_try = true;
                     loadWord();
-
                 } else {
                     messageElement.textContent = "Incorrect! Try again.";
                     messageElement.style.color = "red";
@@ -189,34 +275,26 @@
 
             function showAnswer() {
                 solutionElement.textContent = `${currentPair.japan}`;
-                setTimeout(() => (solutionElement.textContent = ""), 3000);
+                setTimeout(() => {
+                    solutionElement.textContent = "";
+                }, 3000);
             }
 
-            const textInput = document.getElementById("japanInput");
-            function insertCharacter(character) {
-                const start = textInput.selectionStart;
-                const end = textInput.selectionEnd;
-                const text = textInput.value;
-
-                // Insert the character and update the value
-                textInput.value = text.slice(0, start) + character + text.slice(end);
-
-                // Move the cursor to the position after the inserted character
-                textInput.setSelectionRange(start + character.length, start + character.length);
-                textInput.focus();
-            }
-
-            // Event Listeners
+            // Event listeners
             document.getElementById("checkButton").addEventListener("click", checkWord);
+
             japanInput.addEventListener("keydown", function (event) {
                 if (event.key === "Enter") {
+                    event.preventDefault();
                     checkWord();
                 } else if (event.key === "Tab") {
                     event.preventDefault();
                     japanInput.focus();
                 }
             });
+
             document.getElementById("answerButton").addEventListener("click", showAnswer);
+
             document.getElementById("skipButton").addEventListener("click", function () {
                 first_try = true;
                 messageElement.textContent = "";
@@ -225,9 +303,8 @@
                 setTimeout(() => {
                     generateNewPair();
                     japanInput.focus();
-                }, 1000); // 1-second delay
+                }, 1000);
             });
-
 
             loadTSVFile();
         </script>

@@ -12,8 +12,24 @@
             body {
                 margin: 0;
                 font-family: Arial, Helvetica, sans-serif;
-                /* background: #f7f7f7; */
                 color: #222;
+                text-align: center;
+                padding: 20px;
+            }
+
+            #user-display {
+                font-size: 16px;
+                font-weight: bold;
+            }
+
+            #user-display a {
+                text-decoration: none;
+                color: blue;
+                margin-left: 10px;
+            }
+
+            #user-display a:hover {
+                text-decoration: underline;
             }
 
             .main-wrap {
@@ -168,14 +184,6 @@
                 word-break: break-word;
             }
 
-            /* .keyboard-hint {
-                font-size: 0.9rem;
-                color: #666;
-                text-align: center;
-                max-width: 520px;
-                line-height: 1.5;
-            } */
-
             @media (max-width: 640px) {
                 .flashcard-stage {
                     min-height: 280px;
@@ -211,10 +219,37 @@
                     }
 
                     const content = await response.text();
-                    document.getElementById(elementId).outerHTML = content;
+                    const placeholder = document.getElementById(elementId);
+
+                    const tempDiv = document.createElement("div");
+                    tempDiv.innerHTML = content;
+
+                    const scripts = Array.from(tempDiv.querySelectorAll("script")).map((script) => {
+                        const newScript = document.createElement("script");
+                        Array.from(script.attributes).forEach(attr => {
+                            newScript.setAttribute(attr.name, attr.value);
+                        });
+                        newScript.textContent = script.textContent;
+                        script.remove();
+                        return newScript;
+                    });
+
+                    const fragment = document.createDocumentFragment();
+                    while (tempDiv.firstChild) {
+                        fragment.appendChild(tempDiv.firstChild);
+                    }
+
+                    placeholder.replaceWith(fragment);
+
+                    scripts.forEach((script) => {
+                        document.body.appendChild(script);
+                    });
                 } catch (error) {
                     console.error("Failed to load content:", error);
-                    document.getElementById(elementId).textContent = "Failed to load content.";
+                    const target = document.getElementById(elementId);
+                    if (target) {
+                        target.textContent = "Failed to load content.";
+                    }
                 }
             }
 
@@ -548,7 +583,6 @@
         <div id="head-placeholder"></div>
 
         <!-- MAIN CONTENT -->
-        <!-- insert dropdown box and flipcard here -->
         <main class="main-wrap">
             <div class="controls">
                 <label for="lesson-select">Lesson</label>
@@ -563,12 +597,6 @@
                 <button id="next-word-btn" type="button">Next word</button>
                 <div id="status-text" class="status-text"></div>
             </div>
-
-            <!-- <div class="keyboard-hint">
-                <b>Controls:</b><br>
-                Left arrow: previous word
-                Right arrow / Enter: next word · Up / Down: flip card
-            </div> -->
         </main>
         <br><br>
 

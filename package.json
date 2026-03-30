@@ -1,18 +1,12 @@
 {
-  "name": "fireboywatergirl",
+  "name": "cjk-practice-site",
   "version": "1.0.0",
-  "description": "Building out 2.5D game using Three.js",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "three": "^0.170.0"
-  },
-  "devDependencies": {
-    "vite": "^5.4.11"
+    "bcrypt": "^5.1.1",
+    "express": "^4.21.2"
   }
 }

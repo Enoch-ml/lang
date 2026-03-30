@@ -2,6 +2,45 @@
 <html lang="en">
     <head>
         <meta charset="utf-8">
+        <title>Create Account</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                text-align: center;
+                padding: 20px;
+            }
+            .box {
+                border: 3px solid black;
+                padding: 20px;
+                margin: 20px auto;
+                width: 80%;
+                max-width: 600px;
+                background-color: #f9f9f9;
+                border-radius: 10px;
+                text-align: center;
+            }
+            #message {
+                margin-top: 20px;
+                font-size: 18px;
+                font-weight: bold;
+            }
+            #user-display {
+                font-size: 16px;
+                font-weight: bold;
+            }
+            #user-display a {
+                text-decoration: none;
+                color: blue;
+                margin-left: 10px;
+            }
+            #user-display a:hover {
+                text-decoration: underline;
+            }
+            .validation {
+                min-height: 1.2em;
+                font-size: 14px;
+            }
+        </style>
     </head>
 
     <body>
@@ -14,19 +53,19 @@
 
             Enter username:
             <input type="text" id="username" />
-            <div id="valid_username"></div><br>
-            
+            <div id="valid_username" class="validation"></div><br>
+
             Enter password:
             <input type="password" id="password" />
-            <div id="valid_password"></div><br>
+            <div id="valid_password" class="validation"></div><br>
 
             Re-enter password:
             <input type="password" id="repassword" />
-            <div id="valid_repassword"></div><br><br>
+            <div id="valid_repassword" class="validation"></div><br><br>
 
             <button id="create_acc">Create new account</button><br>
+            <div id="message"></div>
         </div>
-
 
         <!-- NAVIGATION BAR -->
         <div id="nav-placeholder"></div>
@@ -41,14 +80,30 @@
                     }
 
                     const content = await response.text();
-                    document.getElementById(elementId).outerHTML = content;
+                    const placeholder = document.getElementById(elementId);
 
-                    // Execute scripts inside the included file
-                    const scripts = document.querySelectorAll(`#${elementId} script`);
-                    scripts.forEach((script) => {
+                    const tempDiv = document.createElement("div");
+                    tempDiv.innerHTML = content;
+
+                    const scripts = Array.from(tempDiv.querySelectorAll("script")).map((script) => {
                         const newScript = document.createElement("script");
+                        Array.from(script.attributes).forEach(attr => {
+                            newScript.setAttribute(attr.name, attr.value);
+                        });
                         newScript.textContent = script.textContent;
-                        document.body.appendChild(newScript);
+                        script.remove();
+                        return newScript;
+                    });
+
+                    const fragment = document.createDocumentFragment();
+                    while (tempDiv.firstChild) {
+                        fragment.appendChild(tempDiv.firstChild);
+                    }
+
+                    placeholder.replaceWith(fragment);
+
+                    scripts.forEach((script) => {
+                        document.body.appendChild(script);
                     });
                 } catch (error) {
                     console.error("Failed to load content:", error);
@@ -56,159 +111,160 @@
                 }
             }
 
-
             includeHTML("../partials/head.html", "head-placeholder");
             includeHTML("../partials/nav.html", "nav-placeholder");
-            
 
+            let validUser = false;
+            let validPass = false;
+            let validRepass = false;
 
+            const usernameInput = document.getElementById("username");
+            const passwordInput = document.getElementById("password");
+            const repasswordInput = document.getElementById("repassword");
 
-            // PASSWORD CREATION //
+            const validUsernameEl = document.getElementById("valid_username");
+            const validPasswordEl = document.getElementById("valid_password");
+            const validRepasswordEl = document.getElementById("valid_repassword");
+            const messageEl = document.getElementById("message");
 
-            let valid_user = false;
-            let valid_pass = false;
-            let valid_repass = false;
-            let input_username = "";
-            let input_password = "";
-            let input_repassword = "";
-            
-            document.getElementById("username").addEventListener("blur", async function () {
-                const username = this.value.trim(); // Get the input value and trim any spaces
-                const messageElement = document.getElementById("valid_username");
-                input_username = username;
+            function setValidation(el, text, color = "red") {
+                el.textContent = text;
+                el.style.color = text ? color : "";
+            }
 
-                // Check if username only contains allowed characters
+            async function validateUsername() {
+                const username = usernameInput.value.trim();
                 const validPattern = /^[a-zA-Z0-9_-]+$/;
-                if (!validPattern.test(username)) {
-                    valid_user = false;
-                    messageElement.textContent = "Username must only consist of letters, numbers, _ and -.";
-                    messageElement.style.color = "red";
-                    return;
-                } else {
-                    messageElement.textContent = "";
-                }
 
-
-                // Check if username is unique to database
-                try {
-                    // Fetch users list
-                    const response = await fetch("../saves/users.txt");
-                    const users_text = await response.text();
-
-                    // Parse the file into lines and extract pairs
-                    const users = users_text.trim().split("\r\n");
-
-                    if (users.split(";")[0].includes(username)) {
-                        valid_user = false;
-                        messageElement.textContent = "Username is taken. Please choose another.";
-                        messageElement.style.color = "red";
-                        return;
-                    } else {
-                        valid_user = true;
-                        messageElement.textContent = "";
-                    }
-                    
-                } catch (error) {
-                    console.error("Error loading the users file in saves folder:", error); // Log the error for debugging
-                    messageElement.textContent = "Error loading users file in saves folder. Please try again.";
-                    messageElement.style.color = "red";
-                }
-            });
-
-            document.getElementById("password").addEventListener("blur", function () {
-                const password = this.value.trim(); // Get the input value and trim any spaces
-                const messageElement = document.getElementById("valid_password");
-                input_password = password;
-                
-                // console.log("password:", password);
-                // console.log("i_password:", input_password, "i_repassword:", input_repassword);
-
-                // Check if the password length is at least 6 characters
-                if (password.length < 6) {
-                    valid_pass = false;
-                    messageElement.textContent = "Password must contain 6+ characters.";
-                    messageElement.style.color = "red";
-                    return;
-                } else {
-                    valid_pass = true;
-                    messageElement.textContent = "";
-                }
-
-                if (check_matching(messageElement)) {
-                    valid_pass = true;
-                } else {
-                    valid_pass = false;
-                }
-            });
-
-            document.getElementById("repassword").addEventListener("blur", function () {
-                const repassword = document.getElementById("repassword").value.trim(); // Get the repassword value
-                const messageElement = document.getElementById("valid_repassword");
-                input_repassword = repassword;
-
-                // console.log("repassword:", repassword);
-                // console.log("i_password:", input_password, "i_repassword:", input_repassword);
-                
-                if (check_matching(messageElement)) {
-                    valid_repass = true;
-                } else {
-                    valid_repass = false;
-                }
-            });
-
-            function check_matching(messageElement) {
-                // Check if the passwords match
-                if (input_password !== input_repassword) {
-                    messageElement.textContent = "Passwords must match.";
-                    messageElement.style.color = "red";
+                if (!username) {
+                    validUser = false;
+                    setValidation(validUsernameEl, "Username is required.");
                     return false;
-                } else {
-                    messageElement.textContent = "";
+                }
+
+                if (!validPattern.test(username)) {
+                    validUser = false;
+                    setValidation(validUsernameEl, "Username must only consist of letters, numbers, _ and -.");
+                    return false;
+                }
+
+                try {
+                    const response = await fetch(`/api/check-username?username=${encodeURIComponent(username)}`);
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        validUser = false;
+                        setValidation(validUsernameEl, data.error || "Could not validate username.");
+                        return false;
+                    }
+
+                    if (data.exists) {
+                        validUser = false;
+                        setValidation(validUsernameEl, "Username is taken. Please choose another.");
+                        return false;
+                    }
+
+                    validUser = true;
+                    setValidation(validUsernameEl, "", "green");
                     return true;
+                } catch (error) {
+                    console.error("Username validation failed:", error);
+                    validUser = false;
+                    setValidation(validUsernameEl, "Could not validate username.");
+                    return false;
                 }
             }
-            
-            const fs = require('fs');
-            const path = require('path');
 
-            function createFolder(username) {
-                const folderPath = path.join(__dirname, '..', 'saves', username);
+            function validatePassword() {
+                const password = passwordInput.value;
+                if (password.length < 6) {
+                    validPass = false;
+                    setValidation(validPasswordEl, "Password must contain 6+ characters.");
+                    return false;
+                }
 
-                // Create the folder (recursive: true allows creation of nested folders)
-                fs.mkdir(folderPath, { recursive: true }, (err) => {
-                    if (err) {
-                        console.error("Error creating folder:", err);
-                    } else {
-                        console.log(`Folder created: ${folderPath}`);
-                    }
-                });
+                validPass = true;
+                setValidation(validPasswordEl, "");
+                return true;
             }
 
-            function createAccount() {
-                if (valid_user && valid_pass && valid_repass) {
-                    // save account information
-                    fs.readFile('../saves/users.txt', 'utf8', (err, data) => {
-                        if (err) throw err;
+            function validateRepassword() {
+                const password = passwordInput.value;
+                const repassword = repasswordInput.value;
 
-                        console.log("Original Content:", data);
+                if (!repassword) {
+                    validRepass = false;
+                    setValidation(validRepasswordEl, "Please re-enter your password.");
+                    return false;
+                }
 
-                        // Modify the content
-                        const updatedContent = data + "\n" + input_username;
+                if (password !== repassword) {
+                    validRepass = false;
+                    setValidation(validRepasswordEl, "Passwords must match.");
+                    return false;
+                }
 
-                        // Write the updated content back to the file
-                        fs.writeFile('../saves/users.txt', updatedContent, 'utf8', (err) => {
-                            if (err) throw err;
-                            console.log("File updated successfully!");
-                        });
+                validRepass = true;
+                setValidation(validRepasswordEl, "");
+                return true;
+            }
+
+            usernameInput.addEventListener("blur", validateUsername);
+            passwordInput.addEventListener("blur", () => {
+                validatePassword();
+                if (repasswordInput.value) validateRepassword();
+            });
+            repasswordInput.addEventListener("blur", validateRepassword);
+
+            async function createAccount() {
+                messageEl.textContent = "";
+                messageEl.style.color = "";
+
+                const okUsername = await validateUsername();
+                const okPassword = validatePassword();
+                const okRepassword = validateRepassword();
+
+                if (!(okUsername && okPassword && okRepassword)) {
+                    messageEl.textContent = "Please fix the errors above.";
+                    messageEl.style.color = "red";
+                    return;
+                }
+
+                const username = usernameInput.value.trim();
+                const password = passwordInput.value;
+
+                try {
+                    const response = await fetch("/api/create-account", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ username, password })
                     });
 
-                    createFolder(input_username);
+                    const data = await response.json();
 
-                    // redirect to homepage, and log in
+                    if (!response.ok) {
+                        messageEl.textContent = data.error || "Failed to create account.";
+                        messageEl.style.color = "red";
+                        return;
+                    }
+
+                    localStorage.setItem("loggedInUser", username);
+                    messageEl.textContent = "Account created successfully.";
+                    messageEl.style.color = "green";
+
+                    setTimeout(() => {
+                        window.location.href = "../index.html";
+                    }, 1000);
+                } catch (error) {
+                    console.error("Create account failed:", error);
+                    messageEl.textContent = "Server error. Please try again.";
+                    messageEl.style.color = "red";
                 }
             }
-            
-            document.getElementById("create_acc").addEventListener("click", createAccount());
+
+            document.getElementById("create_acc").addEventListener("click", createAccount);
         </script>
     </body>
 </html>

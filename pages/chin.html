@@ -4,6 +4,38 @@
         <meta charset="utf-8">
         <title>Vocabulary Practice</title>
         <style>
+            body {
+                font-family: Arial, sans-serif;
+                text-align: center;
+                padding: 20px;
+            }
+            #message {
+                margin-top: 20px;
+                font-size: 18px;
+                font-weight: bold;
+            }
+            .box {
+                border: 3px solid black;
+                padding: 20px;
+                margin: 20px auto;
+                width: 80%;
+                max-width: 600px;
+                background-color: #f9f9f9;
+                border-radius: 10px;
+                text-align: center;
+            }
+            #user-display {
+                font-size: 16px;
+                font-weight: bold;
+            }
+            #user-display a {
+                text-decoration: none;
+                color: blue;
+                margin-left: 10px;
+            }
+            #user-display a:hover {
+                text-decoration: underline;
+            }
             .pinyin-button {
                 width: 25px;
                 height: 25px;
@@ -22,8 +54,6 @@
         <select id="vocabList"></select>
 
         <div class="box">
-            <!-- <h1 id="page-title">中英翻译实践</h1> -->
-
             <div id="wordsLeft">Number of words left: 0</div><br>
             <div id="wordBox"><b>Translate word: </b><span id="currentWord"></span></div><br>
 
@@ -60,7 +90,6 @@
             <button class="pinyin-button" id="v2">ǘ</button>
             <button class="pinyin-button" id="v3">ǚ</button>
             <button class="pinyin-button" id="v4">ǜ</button><br><br>
-
 
             Chinese:
             <input type="text" id="chinInput" placeholder="在这里输入中文词汇..." /><br><br>
@@ -107,30 +136,24 @@
                 "l11a", "l11b", "l12a", "l12b", "l13a", "l13b", "l14a", "l14b", "l15a", "l15b",
                 "l16a", "l16b", "l17a", "l17b", "l18a", "l18b", "l19a", "l19b", "l20a", "l20b",
                 "integrated_chinese_1-2", "integrated_chinese_1", "integrated_chinese_2",
-                "radicals", "numerals",
-                //"word_of_day",
-                //"chinese",
-                //"trunc_chin",
-                //"lyrics_vocab"
+                "radicals", "numerals"
             ];
+
             let tsv_name = optionsList[0] + ".tsv";
             const dropdown = document.getElementById("vocabList");
-            // Loop through the list and add options to the dropdown
+
             optionsList.forEach(optionText => {
                 let option = document.createElement("option");
-                option.value = optionText.toLowerCase().replace(/\s+/g, "-"); // Convert to a safe value
+                option.value = optionText.toLowerCase().replace(/\s+/g, "-");
                 option.textContent = optionText;
                 dropdown.appendChild(option);
             });
+
             dropdown.addEventListener("change", function () {
                 let selectedText = dropdown.options[dropdown.selectedIndex].text;
                 tsv_name = selectedText + ".tsv";
                 loadTSVFile();
             });
-            /////////////////////////
-            /////////////////////////
-
-            
 
             async function includeHTML(file, elementId) {
                 try {
@@ -140,7 +163,31 @@
                     }
 
                     const content = await response.text();
-                    document.getElementById(elementId).outerHTML = content;
+                    const placeholder = document.getElementById(elementId);
+
+                    const tempDiv = document.createElement("div");
+                    tempDiv.innerHTML = content;
+
+                    const scripts = Array.from(tempDiv.querySelectorAll("script")).map((script) => {
+                        const newScript = document.createElement("script");
+                        Array.from(script.attributes).forEach(attr => {
+                            newScript.setAttribute(attr.name, attr.value);
+                        });
+                        newScript.textContent = script.textContent;
+                        script.remove();
+                        return newScript;
+                    });
+
+                    const fragment = document.createDocumentFragment();
+                    while (tempDiv.firstChild) {
+                        fragment.appendChild(tempDiv.firstChild);
+                    }
+
+                    placeholder.replaceWith(fragment);
+
+                    scripts.forEach((script) => {
+                        document.body.appendChild(script);
+                    });
                 } catch (error) {
                     console.error("Failed to load content:", error);
                     document.getElementById(elementId).textContent = "Failed to load content.";
@@ -152,54 +199,41 @@
 
             const lang = "my_chinese";
 
-            // Initialize variables
             let pairs = [];
             let currentPair = {};
             let prob_dist = [];
             let changes = {};
             let first_try = true;
 
-            // DOM elements
             const wordBox = document.getElementById("currentWord");
             const pinyinInput = document.getElementById("pinyinInput");
             const chinInput = document.getElementById("chinInput");
             const messageElement = document.getElementById("message");
             const solutionElement = document.getElementById("solution");
 
+            let unusedPairs = [...pairs];
 
-            let unusedPairs = [...pairs]; // Create a copy of the pairs array for tracking unused pairs
             function generateNewPair() {
-                // Check if there are any unused pairs left
                 if (unusedPairs.length === 0) {
-                    // Reset unusedPairs if all pairs have been used
                     unusedPairs = [...pairs];
                     console.log("All pairs used. Resetting...");
                 }
 
-                // Select a random index from the unusedPairs array
                 const randomIndex = Math.floor(Math.random() * unusedPairs.length);
-
-                // Retrieve and remove the selected pair from unusedPairs
                 currentPair = unusedPairs.splice(randomIndex, 1)[0];
 
-                // Update the UI
                 wordBox.textContent = currentPair.eng;
                 pinyinInput.value = "";
                 chinInput.value = "";
                 messageElement.textContent = "";
-
-                // Update the "Words Left" counter
                 updateWordsLeft();
             }
-
 
             function updateWordsLeft() {
                 const wordsLeftElement = document.getElementById("wordsLeft");
                 wordsLeftElement.textContent = `Words Left: ${unusedPairs.length}`;
             }
 
-
-            // Load and parse the TSV file
             async function loadTSVFile() {
                 try {
                     const response = await fetch("../dicts/chinese/" + tsv_name);
@@ -215,10 +249,8 @@
                         };
                     });
 
-                    // Initialize unusedPairs and update the counter
                     unusedPairs = [...pairs];
                     updateWordsLeft();
-
                     generateNewPair();
                 } catch (error) {
                     console.error("Error loading the TSV file:", error);
@@ -229,11 +261,10 @@
 
             function loadWord() {
                 setTimeout(() => {
-                        generateNewPair();
-                        pinyinInput.focus();
-                    }, 1000);
+                    generateNewPair();
+                    pinyinInput.focus();
+                }, 1000);
             }
-
 
             function checkWord() {
                 const userPinyin = pinyinInput.value.trim().toLowerCase();
@@ -247,7 +278,6 @@
                     first_try && (changes[currentPair.eng] = (changes[currentPair.eng] || 0) + 1);
                     first_try = true;
                     loadWord();
-
                 } else {
                     messageElement.textContent = "Incorrect! Try again.";
                     messageElement.style.color = "red";
@@ -261,20 +291,17 @@
             }
 
             const textInput = document.getElementById("pinyinInput");
+
             function insertCharacter(character) {
                 const start = textInput.selectionStart;
                 const end = textInput.selectionEnd;
                 const text = textInput.value;
 
-                // Insert the character and update the value
                 textInput.value = text.slice(0, start) + character + text.slice(end);
-
-                // Move the cursor to the position after the inserted character
                 textInput.setSelectionRange(start + character.length, start + character.length);
                 textInput.focus();
             }
 
-            // Mapping button IDs to their characters
             const buttons = {
                 a1: "ā", a2: "á", a3: "ǎ", a4: "à",
                 e1: "ē", e2: "é", e3: "ě", e4: "è",
@@ -284,37 +311,41 @@
                 v: "ü", v1: "ǖ", v2: "ǘ", v3: "ǚ", v4: "ǜ"
             };
 
-            // Attach event listeners to buttons
             Object.keys(buttons).forEach(buttonId => {
                 const button = document.getElementById(buttonId);
                 button.addEventListener("click", () => insertCharacter(buttons[buttonId]));
             });
 
-            // Event Listeners
             document.getElementById("checkButton").addEventListener("click", checkWord);
+
             pinyinInput.addEventListener("keydown", function (event) {
-				if (event.key === "Enter") {
-					checkWord();
-				}
-            });
-            document.getElementById("skipButton").addEventListener("click", loadWord);
-            pinyinInput.addEventListener("keydown", function (event) {
-                if (event.key === "Tab") {
-                    event.preventDefault(); // Prevent default tab behavior
-                    chinInput.focus(); // Move focus directly to the chinInput input box
+                if (event.key === "Enter") {
+                    checkWord();
                 }
             });
-            chinInput.addEventListener("keydown", function (event) {
-				if (event.key === "Enter") {
-					checkWord();
-				}
+
+            document.getElementById("skipButton").addEventListener("click", loadWord);
+
+            pinyinInput.addEventListener("keydown", function (event) {
+                if (event.key === "Tab") {
+                    event.preventDefault();
+                    chinInput.focus();
+                }
             });
+
+            chinInput.addEventListener("keydown", function (event) {
+                if (event.key === "Enter") {
+                    checkWord();
+                }
+            });
+
             chinInput.addEventListener("keydown", function (event) {
                 if (event.key === "Tab" && event.shiftKey) {
-                    event.preventDefault(); // Prevent default tab behavior
+                    event.preventDefault();
                     pinyinInput.focus();
                 }
             });
+
             document.getElementById("answerButton").addEventListener("click", showAnswer);
 
             loadTSVFile();

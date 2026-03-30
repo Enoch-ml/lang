@@ -1,68 +1,26 @@
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title id="page-title">lang</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding: 20px;
-        }
-        #message {
-            margin-top: 20px;
-            font-size: 18px;
-            font-weight: bold;
-        }
-        .box {
-            border: 3px solid black;
-            padding: 20px;
-            margin: 20px auto;
-            width: 80%;
-            max-width: 600px;
-            background-color: #f9f9f9;
-            border-radius: 10px;
-            text-align: center;
-        }
-        #user-display {
-            font-size: 16px;
-            font-weight: bold;
-        }
-        #user-display a {
-            text-decoration: none;
-            color: blue;
-            margin-left: 10px;
-        }
-        #user-display a:hover {
-            text-decoration: underline;
-        }
-    </style>
-</head>
+<div style="float: right;" id="user-display"></div>
+<br>
+<h1>practice CJK lang</h1>
 
-<body>
-    <div style="float: right;" id="user-display">
-        <!-- Content dynamically updated by JavaScript -->
-    </div>
-    <br>
-    <h1>practice CJK lang</h1>
+<script>
+    const loggedInUser = localStorage.getItem("loggedInUser");
+    const userDisplayElement = document.getElementById("user-display");
 
-    <script>
-        // Check if the user is logged in
-        const loggedInUser = localStorage.getItem("loggedInUser"); // Retrieve the username from localStorage
-        const userDisplayElement = document.getElementById("user-display");
+    const pathParts = window.location.pathname.split("/").filter(Boolean);
+    const isInPagesDir = pathParts[pathParts.length - 2] === "pages";
+    const loginHref = isInPagesDir ? "login.html" : "pages/login.html";
 
-        if (loggedInUser) {
-            userDisplayElement.innerHTML = `
-                <span>Welcome, ${loggedInUser}!</span>
-                <a href="#" id="logout">Logout</a>
-            `;
+    if (loggedInUser) {
+        userDisplayElement.innerHTML = `
+            <span>Welcome, ${loggedInUser}!</span>
+            <a href="#" id="logout">Logout</a>
+        `;
 
-            document.getElementById("logout").addEventListener("click", () => {
-                localStorage.removeItem("loggedInUser"); // Clear the stored username
-                window.location.reload(); // Reload the page
-            });
-        } else {
-            // User is not logged in; show the Login link
-            userDisplayElement.innerHTML = `<a href="../pages/login.html">Login</a>`;
-        }
-    </script>
-</body>
+        document.getElementById("logout").addEventListener("click", () => {
+            localStorage.removeItem("loggedInUser");
+            window.location.reload();
+        });
+    } else {
+        userDisplayElement.innerHTML = `<a href="${loginHref}">Login</a>`;
+    }
+</script>
