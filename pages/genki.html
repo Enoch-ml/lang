@@ -229,10 +229,17 @@
                         .filter(line => line.trim() !== "");
 
                     pairs = lines.map(line => {
-                        const [japan, eng] = line.split("\t");
+                        const [japan, eng, kanji] = line.split("\t");
+                        const japanTrimmed = japan?.trim() || "";
+                        const kanjiTrimmed = kanji?.trim() || "";
+
                         return {
-                            japan: japan?.trim() || "",
+                            japan: japanTrimmed,
                             eng: eng?.trim() || "",
+                            kanji: kanjiTrimmed,
+                            acceptableAnswers: kanjiTrimmed
+                                ? [japanTrimmed, kanjiTrimmed]
+                                : [japanTrimmed],
                         };
                     });
 
@@ -256,9 +263,9 @@
 
             function checkWord() {
                 const userJapan = japanInput.value.trim();
-                const correctJapan = currentPair.japan;
+                const acceptableAnswers = currentPair.acceptableAnswers || [currentPair.japan];
 
-                if (userJapan === correctJapan) {
+                if (acceptableAnswers.includes(userJapan)) {
                     messageElement.textContent = "Correct!";
                     messageElement.style.color = "green";
                     if (first_try) {
@@ -274,7 +281,10 @@
             }
 
             function showAnswer() {
-                solutionElement.textContent = `${currentPair.japan}`;
+                solutionElement.textContent = currentPair.kanji
+                    ? `${currentPair.japan} / ${currentPair.kanji}`
+                    : `${currentPair.japan}`;
+
                 setTimeout(() => {
                     solutionElement.textContent = "";
                 }, 3000);
