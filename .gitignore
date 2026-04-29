@@ -1,4 +1,4 @@
-# Virtual environment
+# Python venv
 mvenv/
 
 # Generate character workbook outputs
@@ -12,3 +12,6 @@ node_modules/
 
 # Tests
 tests/
+
+saves/
+archive/
