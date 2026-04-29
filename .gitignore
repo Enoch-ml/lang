@@ -1,6 +1,14 @@
+# Virtual environment
 mvenv/
+
+# Generate character workbook outputs
 gen_char_wkbk/output_chars/
 gen_char_wkbk/integrated-chinese-3_character-workbook/
 gen_char_wkbk/integrated-chinese-4_character-workbook/
 gen_char_wkbk/google_scripts_generate_char_wkbk_log.txt/
+
+# node.js cache
 node_modules/
+
+# Tests
+tests/
