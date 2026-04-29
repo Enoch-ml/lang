@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>TSV Flashcard Practice</title>
+
+        <style>
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                margin: 0;
+                font-family: Arial, Helvetica, sans-serif;
+                color: #222;
+                text-align: center;
+                padding: 20px;
+                background: #fff;
+            }
+
+            #user-display {
+                font-size: 16px;
+                font-weight: bold;
+            }
+
+            #user-display a {
+                text-decoration: none;
+                color: blue;
+                margin-left: 10px;
+            }
+
+            #user-display a:hover {
+                text-decoration: underline;
+            }
+
+            .main-wrap {
+                max-width: 1000px;
+                margin: 0 auto;
+                padding: 24px 16px 8px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 18px;
+            }
+
+            .upload-panel,
+            .column-panel {
+                width: 100%;
+                max-width: 720px;
+                border: 1px solid #ddd;
+                border-radius: 14px;
+                padding: 16px;
+                background: #fafafa;
+                text-align: left;
+            }
+
+            .upload-panel h2,
+            .column-panel h2 {
+                margin: 0 0 10px;
+                font-size: 1.1rem;
+                text-align: center;
+            }
+
+            .upload-row {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+
+            input[type="file"] {
+                max-width: 100%;
+                font-size: 0.95rem;
+            }
+
+            .help-text {
+                margin: 10px 0 0;
+                font-size: 0.9rem;
+                color: #555;
+                line-height: 1.45;
+                text-align: center;
+            }
+
+            .column-panel {
+                display: none;
+            }
+
+            .column-panel.is-visible {
+                display: block;
+            }
+
+            .column-table-wrap {
+                width: 100%;
+                overflow-x: auto;
+            }
+
+            .column-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 10px;
+                background: #fff;
+                border-radius: 10px;
+                overflow: hidden;
+            }
+
+            .column-table th,
+            .column-table td {
+                border-bottom: 1px solid #eee;
+                padding: 10px;
+                text-align: center;
+                vertical-align: middle;
+            }
+
+            .column-table th:first-child,
+            .column-table td:first-child {
+                text-align: left;
+            }
+
+            .column-table th {
+                background: #f1f1f1;
+                font-size: 0.9rem;
+            }
+
+            .column-table tr:last-child td {
+                border-bottom: none;
+            }
+
+            .column-name {
+                font-weight: 600;
+                word-break: break-word;
+            }
+
+            .column-table input[type="checkbox"] {
+                width: 18px;
+                height: 18px;
+                cursor: pointer;
+            }
+
+            .button-row {
+                margin-top: 12px;
+                display: flex;
+                justify-content: center;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+
+            button {
+                font-size: 1rem;
+                padding: 10px 14px;
+                border: 1px solid #999;
+                border-radius: 8px;
+                background: #fff;
+                cursor: pointer;
+            }
+
+            button:hover {
+                background: #f1f1f1;
+            }
+
+            button:disabled {
+                cursor: not-allowed;
+                opacity: 0.55;
+            }
+
+            .bottom-controls {
+                width: 100%;
+                max-width: 420px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+
+            .status-text {
+                min-height: 1.2em;
+                font-size: 0.95rem;
+                color: #555;
+                text-align: center;
+            }
+
+            .flashcard-stage {
+                perspective: 1400px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 320px;
+                width: 100%;
+            }
+
+            .cards__single {
+                --card-width: min(92vw, 640px);
+                width: var(--card-width);
+                height: calc(var(--card-width) * 3 / 5);
+                flex: 0 0 auto;
+                cursor: pointer;
+            }
+
+            .cards__inner {
+                position: relative;
+                width: 100%;
+                height: 100%;
+                transition: transform 0.6s ease;
+                transform-style: preserve-3d;
+            }
+
+            .cards__single.flip .cards__inner {
+                transform: rotateX(180deg);
+            }
+
+            .card-face {
+                position: absolute;
+                inset: 0;
+                backface-visibility: hidden;
+                -webkit-backface-visibility: hidden;
+                background: #fff;
+                border: 2px solid #222;
+                border-radius: 14px;
+                box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+                padding: 22px 18px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                text-align: center;
+                overflow: auto;
+            }
+
+            .card-back {
+                transform: rotateX(180deg);
+            }
+
+            .field-block {
+                width: 100%;
+                max-width: 560px;
+                margin: 6px 0;
+            }
+
+
+            .field-value {
+                font-size: clamp(1.25rem, 3.6vw, 2rem);
+                font-weight: 600;
+                line-height: 1.35;
+                white-space: pre-wrap;
+                word-break: break-word;
+            }
+
+            .field-block:first-child .field-value {
+                font-size: clamp(1.8rem, 5vw, 2.5rem);
+                font-weight: 700;
+            }
+
+            .placeholder-text {
+                font-size: clamp(1.2rem, 4vw, 1.8rem);
+                font-weight: 600;
+                line-height: 1.4;
+                color: #444;
+            }
+
+            .small-placeholder {
+                margin-top: 10px;
+                font-size: 0.95rem;
+                color: #666;
+                line-height: 1.45;
+                max-width: 520px;
+            }
+
+            @media (max-width: 640px) {
+                .main-wrap {
+                    padding-inline: 4px;
+                }
+
+                .upload-panel,
+                .column-panel {
+                    padding: 14px 10px;
+                }
+
+                .flashcard-stage {
+                    min-height: 280px;
+                }
+
+                .card-face {
+                    padding: 16px 12px;
+                }
+
+
+                .field-value {
+                    font-size: clamp(1rem, 4vw, 1.35rem);
+                }
+
+                .field-block:first-child .field-value {
+                    font-size: clamp(1.45rem, 5vw, 2rem);
+                }
+            }
+        </style>
+
+        <script>
+            async function includeHTML(file, elementId) {
+                try {
+                    const placeholder = document.getElementById(elementId);
+                    if (!placeholder) return;
+
+                    const response = await fetch(file);
+                    if (!response.ok) {
+                        throw new Error(`Error fetching ${file}: ${response.statusText}`);
+                    }
+
+                    const content = await response.text();
+                    const tempDiv = document.createElement("div");
+                    tempDiv.innerHTML = content;
+
+                    const scripts = Array.from(tempDiv.querySelectorAll("script")).map((script) => {
+                        const newScript = document.createElement("script");
+                        Array.from(script.attributes).forEach(attr => {
+                            newScript.setAttribute(attr.name, attr.value);
+                        });
+                        newScript.textContent = script.textContent;
+                        script.remove();
+                        return newScript;
+                    });
+
+                    const fragment = document.createDocumentFragment();
+                    while (tempDiv.firstChild) {
+                        fragment.appendChild(tempDiv.firstChild);
+                    }
+
+                    placeholder.replaceWith(fragment);
+
+                    scripts.forEach((script) => {
+                        document.body.appendChild(script);
+                    });
+                } catch (error) {
+                    console.warn("Optional HTML include failed:", error);
+                }
+            }
+
+            let headers = [];
+            let rows = [];
+            let currentIndex = 0;
+
+            function escapeHtml(str) {
+                return String(str ?? "")
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            }
+
+            function setStatus(text) {
+                const statusEl = document.getElementById("status-text");
+                if (statusEl) statusEl.textContent = text;
+            }
+
+            function getCardElement() {
+                return document.querySelector(".cards__single");
+            }
+
+            function toggleCard() {
+                const card = getCardElement();
+                if (card) card.classList.toggle("flip");
+            }
+
+            function normalizeHeaderForGuess(header) {
+                return String(header ?? "").trim().toLowerCase().replace(/\s+/g, "_");
+            }
+
+            function parseTSV(text) {
+                const cleanText = text.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+                const lines = cleanText.split("\n").filter(line => line.trim() !== "");
+
+                if (lines.length < 2) {
+                    throw new Error("The TSV needs a header row and at least one data row.");
+                }
+
+                const parsedHeaders = lines[0].split("\t").map(header => header.trim());
+                if (!parsedHeaders.length || parsedHeaders.every(header => header === "")) {
+                    throw new Error("The TSV header row is empty.");
+                }
+
+                const parsedRows = lines.slice(1).map((line, rowIndex) => {
+                    const cells = line.split("\t");
+                    const rowObject = {};
+
+                    parsedHeaders.forEach((header, index) => {
+                        rowObject[header] = (cells[index] ?? "").trim();
+                    });
+
+                    rowObject.__rowNumber = rowIndex + 1;
+                    return rowObject;
+                }).filter(row => {
+                    return parsedHeaders.some(header => String(row[header] ?? "").trim() !== "");
+                });
+
+                if (!parsedRows.length) {
+                    throw new Error("No usable data rows were found after the header.");
+                }
+
+                return { parsedHeaders, parsedRows };
+            }
+
+            function shouldDefaultToFront(header) {
+                const h = normalizeHeaderForGuess(header);
+                return [
+                    "japanese",
+                    "jp",
+                    "word",
+                    "term",
+                    "kanji",
+                    "kana",
+                    "hiragana",
+                    "katakana",
+                    "pronunciation",
+                    "reading",
+                    "romaji"
+                ].includes(h);
+            }
+
+            function shouldDefaultToBack(header) {
+                const h = normalizeHeaderForGuess(header);
+                return [
+                    "english",
+                    "en",
+                    "translation",
+                    "translation_en",
+                    "meaning",
+                    "definition",
+                    "gloss"
+                ].includes(h);
+            }
+
+            function renderColumnSelector() {
+                const panel = document.getElementById("column-panel");
+                const tableBody = document.getElementById("column-selector-body");
+                tableBody.innerHTML = "";
+
+                headers.forEach((header, index) => {
+                    const tr = document.createElement("tr");
+
+                    const nameTd = document.createElement("td");
+                    nameTd.className = "column-name";
+                    nameTd.textContent = header || `(blank header ${index + 1})`;
+
+                    const frontTd = document.createElement("td");
+                    const frontInput = document.createElement("input");
+                    frontInput.type = "checkbox";
+                    frontInput.className = "side-choice";
+                    frontInput.dataset.header = header;
+                    frontInput.dataset.side = "front";
+                    frontInput.checked = shouldDefaultToFront(header) && !shouldDefaultToBack(header);
+                    frontInput.setAttribute("aria-label", `Show ${header} on front`);
+                    frontTd.appendChild(frontInput);
+
+                    const backTd = document.createElement("td");
+                    const backInput = document.createElement("input");
+                    backInput.type = "checkbox";
+                    backInput.className = "side-choice";
+                    backInput.dataset.header = header;
+                    backInput.dataset.side = "back";
+                    backInput.checked = shouldDefaultToBack(header);
+                    backInput.setAttribute("aria-label", `Show ${header} on back`);
+                    backTd.appendChild(backInput);
+
+                    tr.appendChild(nameTd);
+                    tr.appendChild(frontTd);
+                    tr.appendChild(backTd);
+                    tableBody.appendChild(tr);
+                });
+
+                tableBody.querySelectorAll(".side-choice").forEach(input => {
+                    input.addEventListener("change", handleSideChoiceChange);
+                });
+
+                panel.classList.add("is-visible");
+            }
+
+            function handleSideChoiceChange(event) {
+                const changedInput = event.target;
+                const header = changedInput.dataset.header;
+                const side = changedInput.dataset.side;
+
+                if (changedInput.checked) {
+                    const oppositeSide = side === "front" ? "back" : "front";
+                    const oppositeInput = document.querySelector(
+                        `.side-choice[data-header="${CSS.escape(header)}"][data-side="${oppositeSide}"]`
+                    );
+                    if (oppositeInput) oppositeInput.checked = false;
+                }
+
+                currentIndex = 0;
+                renderCurrentCard();
+            }
+
+            function getSelectedHeaders(side) {
+                return Array.from(document.querySelectorAll(`.side-choice[data-side="${side}"]:checked`))
+                    .map(input => input.dataset.header);
+            }
+
+            function renderFields(row, selectedHeaders, emptyMessage) {
+                const fieldHtml = selectedHeaders
+                    .map(header => {
+                        const value = row[header];
+                        if (!String(value ?? "").trim()) return "";
+
+                        return `
+                            <div class="field-block">
+                                <div class="field-value">${escapeHtml(value)}</div>
+                            </div>
+                        `;
+                    })
+                    .filter(Boolean)
+                    .join("");
+
+                if (fieldHtml) return fieldHtml;
+
+                return `
+                    <div class="placeholder-text">${escapeHtml(emptyMessage)}</div>
+                    <div class="small-placeholder">Use the column checklist above to choose which TSV fields appear here.</div>
+                `;
+            }
+
+            function renderCurrentCard() {
+                const host = document.getElementById("flashcard-host");
+
+                if (!rows.length) {
+                    host.innerHTML = `
+                        <div class="cards__single">
+                            <div class="cards__inner">
+                                <div class="card-face">
+                                    <div class="placeholder-text">Upload a TSV to begin.</div>
+                                    <div class="small-placeholder">The first row must contain column headers.</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    setStatus("0 / 0");
+                    return;
+                }
+
+                const row = rows[currentIndex];
+                const frontHeaders = getSelectedHeaders("front");
+                const backHeaders = getSelectedHeaders("back");
+                const frontHtml = renderFields(row, frontHeaders, "No front columns selected");
+                const backHtml = renderFields(row, backHeaders, "No back columns selected");
+
+                host.innerHTML = `
+                    <div class="cards__single" tabindex="0" aria-label="Flashcard. Click or press space to flip.">
+                        <div class="cards__inner">
+                            <div class="card-face card-front">
+                                ${frontHtml}
+                            </div>
+                            <div class="card-face card-back">
+                                ${backHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                const cardElement = getCardElement();
+                if (cardElement) {
+                    cardElement.addEventListener("click", toggleCard);
+                }
+
+                setStatus(`${currentIndex + 1} / ${rows.length}`);
+            }
+
+            function nextCard() {
+                if (!rows.length) return;
+                currentIndex = (currentIndex + 1) % rows.length;
+                renderCurrentCard();
+            }
+
+            function previousCard() {
+                if (!rows.length) return;
+                currentIndex = (currentIndex - 1 + rows.length) % rows.length;
+                renderCurrentCard();
+            }
+
+            function shuffleCards() {
+                if (rows.length < 2) return;
+
+                for (let i = rows.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [rows[i], rows[j]] = [rows[j], rows[i]];
+                }
+
+                currentIndex = 0;
+                renderCurrentCard();
+                setStatus(`Shuffled ${rows.length} cards. 1 / ${rows.length}`);
+            }
+
+            function resetCards() {
+                headers = [];
+                rows = [];
+                currentIndex = 0;
+                document.getElementById("tsv-upload").value = "";
+                document.getElementById("column-selector-body").innerHTML = "";
+                document.getElementById("column-panel").classList.remove("is-visible");
+                renderCurrentCard();
+                setStatus("Upload cleared");
+            }
+
+            function handleFileUpload(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+
+                reader.onload = () => {
+                    try {
+                        const { parsedHeaders, parsedRows } = parseTSV(String(reader.result ?? ""));
+                        headers = parsedHeaders;
+                        rows = parsedRows;
+                        currentIndex = 0;
+                        renderColumnSelector();
+                        renderCurrentCard();
+                        setStatus(`Loaded ${rows.length} cards from ${file.name}`);
+                    } catch (error) {
+                        console.error(error);
+                        headers = [];
+                        rows = [];
+                        currentIndex = 0;
+                        document.getElementById("column-selector-body").innerHTML = "";
+                        document.getElementById("column-panel").classList.remove("is-visible");
+                        renderCurrentCard();
+                        setStatus(error.message || "Could not parse TSV file");
+                    }
+                };
+
+                reader.onerror = () => {
+                    setStatus("Could not read the selected file.");
+                };
+
+                reader.readAsText(file, "UTF-8");
+            }
+
+            document.addEventListener("DOMContentLoaded", async () => {
+                await includeHTML("../partials/head.html", "head-placeholder");
+                await includeHTML("../partials/nav.html", "nav-placeholder");
+
+                document.getElementById("tsv-upload").addEventListener("change", handleFileUpload);
+                document.getElementById("clear-upload-btn").addEventListener("click", resetCards);
+                document.getElementById("previous-word-btn").addEventListener("click", previousCard);
+                document.getElementById("shuffle-btn").addEventListener("click", shuffleCards);
+                document.getElementById("next-word-btn").addEventListener("click", nextCard);
+
+                document.addEventListener("keydown", (event) => {
+                    const activeTag = document.activeElement ? document.activeElement.tagName : "";
+                    if (["INPUT", "TEXTAREA", "SELECT", "BUTTON"].includes(activeTag)) return;
+
+                    switch (event.key) {
+                        case "ArrowLeft":
+                            event.preventDefault();
+                            previousCard();
+                            break;
+                        case "ArrowRight":
+                        case "Enter":
+                            event.preventDefault();
+                            nextCard();
+                            break;
+                        case " ":
+                        case "Spacebar":
+                            event.preventDefault();
+                            toggleCard();
+                            break;
+                        case "ArrowUp":
+                        case "ArrowDown":
+                            event.preventDefault();
+                            toggleCard();
+                            break;
+                    }
+                });
+
+                renderCurrentCard();
+            });
+        </script>
+    </head>
+
+    <body>
+        <!-- HEAD -->
+        <div id="head-placeholder"></div>
+
+        <!-- MAIN CONTENT -->
+        <main class="main-wrap">
+            <section class="upload-panel" aria-labelledby="upload-heading">
+                <h2 id="upload-heading">Upload TSV</h2>
+                <div class="upload-row">
+                    <input id="tsv-upload" type="file" accept=".tsv,.txt,text/tab-separated-values,text/plain">
+                    <button id="clear-upload-btn" type="button">Clear upload</button>
+                </div>
+                <p class="help-text">
+                    Upload a tab-separated file with a header row. After upload, choose whether each column appears on the front, back, or neither side of the flashcard.
+                </p>
+            </section>
+
+            <section id="column-panel" class="column-panel" aria-labelledby="columns-heading">
+                <h2 id="columns-heading">Choose flashcard columns</h2>
+                <div class="column-table-wrap">
+                    <table class="column-table">
+                        <thead>
+                            <tr>
+                                <th>Header</th>
+                                <th>Front</th>
+                                <th>Back</th>
+                            </tr>
+                        </thead>
+                        <tbody id="column-selector-body"></tbody>
+                    </table>
+                </div>
+                <p class="help-text">
+                    Each header can be selected for only one side. Uncheck both boxes to hide that column.
+                </p>
+            </section>
+
+            <div class="flashcard-stage">
+                <div id="flashcard-host"></div>
+            </div>
+
+            <div class="bottom-controls">
+                <button id="previous-word-btn" type="button">Previous word</button>
+                <button id="shuffle-btn" type="button">Shuffle</button>
+                <button id="next-word-btn" type="button">Next word</button>
+            </div>
+
+            <div id="status-text" class="status-text"></div>
+        </main>
+        <br><br>
+
+        <!-- NAVIGATION BAR -->
+        <div id="nav-placeholder"></div>
+    </body>
+</html>
