@@ -42,6 +42,13 @@
                 margin: 1px;
                 font-size: 16px;
             }
+            #difficultActions {
+                margin-top: 12px;
+            }
+            #difficultStatus {
+                display: none;
+                margin-top: 8px;
+            }
         </style>
     </head>
 
@@ -97,6 +104,11 @@
             <button id="checkButton">Check</button>
             <button id="answerButton">Show Answer</button>
             <button id="skipButton">Skip</button>
+            <div id="difficultActions">
+                <button id="markDifficultButton">Mark as Difficult (Total: 0)</button>
+                <button id="saveDifficultButton" disabled>Save changes</button>
+            </div>
+            <div id="difficultStatus"></div>
             <div id="message"></div>
             <div id="solution"></div>
         </div>
@@ -210,6 +222,14 @@
             const chinInput = document.getElementById("chinInput");
             const messageElement = document.getElementById("message");
             const solutionElement = document.getElementById("solution");
+            const markDifficultButton = document.getElementById("markDifficultButton");
+            const saveDifficultButton = document.getElementById("saveDifficultButton");
+            const difficultStatusElement = document.getElementById("difficultStatus");
+
+            let difficultWords = new Map();
+            let difficultWordsDirty = false;
+            let difficultDownloadUrl = null;
+            let difficultStatusTimeout = null;
 
             let unusedPairs = [...pairs];
 
@@ -232,6 +252,101 @@
             function updateWordsLeft() {
                 const wordsLeftElement = document.getElementById("wordsLeft");
                 wordsLeftElement.textContent = `Words Left: ${unusedPairs.length}`;
+            }
+
+            function getDifficultWordKey(pair) {
+                return [pair.chin, pair.pinyin, pair.eng].join("\u0000");
+            }
+
+            function sanitizeTSVCell(value) {
+                return String(value ?? "")
+                    .replace(/\r?\n/g, " ")
+                    .replace(/\t/g, " ")
+                    .trim();
+            }
+
+            function buildDifficultWordsTSV() {
+                const header = ["汉字", "Pinyin", "English"].join("\t");
+                const rows = Array.from(difficultWords.values()).map(pair => {
+                    return [
+                        sanitizeTSVCell(pair.chin),
+                        sanitizeTSVCell(pair.pinyin),
+                        sanitizeTSVCell(pair.eng)
+                    ].join("\t");
+                });
+
+                return [header, ...rows].join("\n") + "\n";
+            }
+
+            function showDifficultStatus(message, color = "") {
+                if (difficultStatusTimeout) {
+                    clearTimeout(difficultStatusTimeout);
+                }
+
+                difficultStatusElement.textContent = message;
+                difficultStatusElement.style.color = color;
+                difficultStatusElement.style.display = "block";
+
+                difficultStatusTimeout = setTimeout(() => {
+                    difficultStatusElement.textContent = "";
+                    difficultStatusElement.style.display = "none";
+                    difficultStatusTimeout = null;
+                }, 3000);
+            }
+
+            function updateDifficultButtons() {
+                if (difficultDownloadUrl) {
+                    URL.revokeObjectURL(difficultDownloadUrl);
+                    difficultDownloadUrl = null;
+                }
+
+                markDifficultButton.textContent = `Mark as Difficult (Total: ${difficultWords.size})`;
+                saveDifficultButton.disabled = difficultWords.size === 0;
+            }
+
+            function downloadDifficultWords() {
+                if (difficultWords.size === 0) {
+                    return;
+                }
+
+                const blob = new Blob([buildDifficultWordsTSV()], {
+                    type: "text/tab-separated-values;charset=utf-8"
+                });
+
+                if (difficultDownloadUrl) {
+                    URL.revokeObjectURL(difficultDownloadUrl);
+                }
+
+                difficultDownloadUrl = URL.createObjectURL(blob);
+
+                const downloadLink = document.createElement("a");
+                downloadLink.href = difficultDownloadUrl;
+                downloadLink.download = "difficult_words.tsv";
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+
+                difficultWordsDirty = false;
+                showDifficultStatus("Saved difficult words to TSV download.", "green");
+            }
+
+            function markCurrentWordAsDifficult() {
+                if (!currentPair || !currentPair.eng) {
+                    showDifficultStatus("No current word to mark.", "red");
+                    return;
+                }
+
+                const key = getDifficultWordKey(currentPair);
+
+                if (difficultWords.has(key)) {
+                    showDifficultStatus("This word is already marked as difficult.", "orange");
+                    return;
+                }
+
+                difficultWords.set(key, { ...currentPair });
+                difficultWordsDirty = true;
+                updateDifficultButtons();
+                showDifficultStatus("This word has been marked as difficult.", "green");
             }
 
             async function loadTSVFile() {
@@ -347,6 +462,17 @@
             });
 
             document.getElementById("answerButton").addEventListener("click", showAnswer);
+            markDifficultButton.addEventListener("click", markCurrentWordAsDifficult);
+            saveDifficultButton.addEventListener("click", downloadDifficultWords);
+
+            window.addEventListener("beforeunload", function (event) {
+                if (!difficultWordsDirty) {
+                    return;
+                }
+
+                event.preventDefault();
+                event.returnValue = "";
+            });
 
             loadTSVFile();
         </script>
